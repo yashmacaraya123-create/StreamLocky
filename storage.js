@@ -313,21 +313,34 @@ async function slCloudSyncSession(authSession) {
       return;
     }
     const user = authSession.user;
-    const [{ data:profile,error:profileError },{ data:favorites,error:favoritesError }] = await Promise.all([
-      window.slSupabase.from('profiles').select('username,full_name,role').eq('id',user.id).maybeSingle(),
-      window.slSupabase.from('favorites').select('group_id').eq('user_id',user.id)
-    ]);
-    if (profileError) throw profileError;
-    if (favoritesError) throw favoritesError;
+    const metadata = user.user_metadata || {};
+    let profile = null;
+    let favorites = [];
+    try {
+      const [{ data:profileRow,error:profileError },{ data:favoriteRows,error:favoritesError }] = await Promise.all([
+        window.slSupabase.from('profiles').select('username,full_name,role').eq('id',user.id).maybeSingle(),
+        window.slSupabase.from('favorites').select('group_id').eq('user_id',user.id)
+      ]);
+      if (profileError) throw profileError;
+      if (favoritesError) throw favoritesError;
+      profile = profileRow;
+      favorites = favoriteRows || [];
+    } catch (e) {
+      // Authentication still works if a profile query is temporarily unavailable.
+      console.warn('StreamLock profile details are temporarily unavailable:',e.message || e);
+    }
+    const username = (profile && profile.username) || metadata.username || '';
+    const isMaker = (profile && profile.role === 'admin') ||
+      username === (window.SL_SUPABASE_CONFIG && window.SL_SUPABASE_CONFIG.adminUsername) ||
+      user.email === 'yashmacaraya123@gmail.com';
     const session = {
-      id:user.id, email:user.email || '', role:profile && profile.role === 'admin' ? 'admin' : 'user',
-      username:(profile && profile.username) || (user.user_metadata && user.user_metadata.username) || '',
-      name:(profile && profile.full_name) || (user.user_metadata && user.user_metadata.full_name) || 'Viewer',
-      favorites:(favorites || []).map(item => item.group_id)
+      id:user.id, email:user.email || '', role:isMaker ? 'admin' : 'user', username,
+      name:(profile && profile.full_name) || metadata.full_name || 'Viewer',
+      favorites:favorites.map(item => item.group_id)
     };
     localStorage.setItem('streamlock_session',JSON.stringify(session));
   } catch (e) {
-    console.warn('StreamLock profile sync failed:',e.message || e);
+    console.warn('StreamLock session sync failed:',e.message || e);
   } finally { SL_CLOUD.syncing = false; }
 }
 
@@ -469,7 +482,7 @@ function isDeveloperAccount() {
 
 function enforceAdminAuth() {
   if (!isDeveloperAccount()) {
-    slAlert('Access Restricted: Only the Developer (yashmacaraya123@gmail.com) can access this page.');
+    slAlert('Access Restricted: Only the authorized StreamLock Maker/admin account can access this page.');
     window.location.href = 'login.html';
     return false;
   }
