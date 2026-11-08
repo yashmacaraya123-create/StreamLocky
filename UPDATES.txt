@@ -1,0 +1,38 @@
+STREAMLOCK V8 — PROFESSIONAL CUSTOM PLAYER & LOCKED SPONSOR ADS
+
+PROFESSIONAL PLAYER INTERFACE
+- Rebuilt the controls as arranged overlays floating above the video.
+- Top overlay: StreamLock branding, quality selector, and fullscreen.
+- Bottom overlay: seek timeline, elapsed time, duration, play/pause, mute,
+  volume slider, and playback-speed selector.
+- Small, aligned controls with responsive desktop/mobile sizing.
+- Controls fade and slide away after playback inactivity. Moving, touching,
+  or clicking the player reveals them without unexpectedly pausing playback.
+- A dedicated center play button controls paused playback.
+- Persistent source masks and blocked iframe touch controls keep external
+  native controls behind the StreamLock interface. External hosts may still
+  impose their own embedding or playback restrictions.
+
+GENUINE PLAYBACK AND QUALITY
+- Real timeline, elapsed time, duration, seeking, play/pause, volume, mute,
+  and speed for direct/uploaded videos.
+- YouTube and Vimeo playback APIs supply external time, duration, state,
+  volume, seeking, speed, and quality commands where supported.
+- Quality menu: Auto, HD, 1080p, 720p, 480p, and 360p.
+- HD and 1080p remain rewarded; lower resolutions are free.
+- Developers can upload actual files for every listed resolution.
+- YouTube/Vimeo quality options request the corresponding real stream from
+  the provider; the provider selects the closest genuinely available stream.
+- No URL-only resolution labels or simulated uploaded renditions.
+
+SPONSOR AD BEHAVIOR
+- Fullscreen rewarded ads never force or lock screen rotation.
+- Sponsor videos have no adjustable resolution or native control access.
+- Direct sponsor videos resist pause, seeking, speed/volume changes,
+  picture-in-picture, remote playback, downloads, and context menus.
+- External sponsor touch controls are blocked; tapping visits the ad link.
+- Banner sponsor videos use the same locked playback behavior.
+- Ordinary sponsor taps never grant rewards; Check Offer remains explicit.
+
+DEPLOY
+Replace the previous website files with this package and redeploy to Netlify.

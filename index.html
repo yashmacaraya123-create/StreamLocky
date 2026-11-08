@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Developer - Video Management Hub</title>
+  <link rel="stylesheet" href="theme.css">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: #070a14;
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      font-size: 14px;
+    }
+    .admin-bar {
+      background: #0d1424;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: #fff;
+    }
+    .brand span { color: #00f2fe; }
+    .nav-tabs {
+      display: flex;
+      background: #141c2e;
+      border-radius: 6px;
+      padding: 3px;
+      gap: 2px;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-weight: 600;
+      font-size: 0.8rem;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .tab-btn:hover { color: #fff; }
+    .tab-btn.active {
+      background: #00f2fe;
+      color: #051322;
+      font-weight: 700;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 12px;
+      border-radius: 5px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+    .btn-primary { background: #00f2fe; color: #051322; font-weight: 700; }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-outline { background: #162035; color: #cbd5e1; border: 1px solid rgba(255,255,255,0.1); }
+    .btn-copy { background: #0284c7; color: #fff; padding: 4px 8px; font-size: 0.75rem; border-radius: 3px; }
+    .btn-edit { background: #f59e0b; color: #000; padding: 4px 8px; font-size: 0.75rem; border-radius: 3px; font-weight: 700; }
+    .btn-danger { background: #dc2626; color: #fff; padding: 4px 8px; font-size: 0.75rem; border-radius: 3px; }
+    .main-box {
+      max-width: 1200px;
+      width: 100%;
+      margin: 16px auto;
+      padding: 0 16px;
+      flex-grow: 1;
+    }
+    .pane { display: none; }
+    .pane.active { display: block; }
+    .card {
+      background: #0d1424;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .card-title { font-size: 1.1rem; font-weight: 800; }
+    .card-sub { font-size: 0.8rem; color: #94a3b8; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th {
+      background: #141c2e;
+      color: #94a3b8;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    td {
+      padding: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      font-size: 0.82rem;
+      vertical-align: middle;
+    }
+    .link-copy-box {
+      background: #080d1a;
+      border: 1px solid rgba(0, 242, 254, 0.25);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.75rem;
+      color: #38bdf8;
+      max-width: 240px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .form-group { margin-bottom: 12px; }
+    .form-label { display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 4px; color: #cbd5e1; }
+    .form-input, .form-textarea, .form-select {
+      width: 100%;
+      padding: 7px 10px;
+      background: #080d1a;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 5px;
+      color: #fff;
+      font-size: 0.85rem;
+      outline: none;
+    }
+    .form-input:focus, .form-textarea:focus { border-color: #00f2fe; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .source-tab-btn {
+      background: #141c2e;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #cbd5e1;
+      padding: 6px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .source-tab-btn.active {
+      background: #00f2fe;
+      color: #051322;
+      border-color: #00f2fe;
+    }
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #10b981;
+      color: #000;
+      font-weight: 700;
+      padding: 8px 16px;
+      border-radius: 6px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      display: none;
+      z-index: 1000;
+    }
+
+    /* Central Ads Manager */
+    .ad-manager-card { max-width: 1040px; margin: 0 auto; }
+    .ad-manager-note { background:rgba(0,242,254,.07); border:1px solid rgba(0,242,254,.22); color:#a9bdd7; border-radius:8px; padding:11px 13px; font-size:.79rem; line-height:1.5; margin-bottom:20px; }
+    .ad-manager-section-title { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:6px 0 12px; }
+    .ad-manager-section-title h3 { font-size:1rem; color:#e9f6ff; }
+    .ad-manager-section-title p { font-size:.75rem; color:#8298b9; margin-top:2px; }
+    .ad-count { flex:none; color:#00f2fe; background:rgba(0,242,254,.08); border:1px solid rgba(0,242,254,.2); padding:4px 9px; border-radius:20px; font-size:.7rem; }
+    .ad-editor { background:#080d1a; border:1px solid rgba(255,255,255,.10); border-radius:9px; padding:15px; margin-bottom:12px; }
+    .ad-editor-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+    .ad-editor-title { color:#38bdf8; font-size:.9rem; font-weight:800; }
+    .ad-editor-actions { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    .ad-toggle, .ad-check { display:inline-flex; align-items:center; gap:6px; color:#cbd5e1; font-size:.76rem; cursor:pointer; }
+    .ad-toggle input, .ad-check input { accent-color:#00f2fe; }
+    .ad-placement-grid { display:flex; flex-wrap:wrap; gap:8px 16px; padding:10px 12px; background:#0d1526; border:1px solid rgba(255,255,255,.07); border-radius:6px; margin-bottom:12px; }
+    .ad-source-row { display:grid; grid-template-columns:170px 1fr; gap:12px; }
+    .ad-existing-file { color:#34d399; font-size:.7rem; margin-top:5px; }
+    .ad-manager-divider { height:1px; background:rgba(255,255,255,.09); margin:24px 0 20px; }
+    .ad-save-all { width:100%; padding:11px; margin-top:18px; }
+    .ad-empty { color:#8298b9; border:1px dashed rgba(255,255,255,.14); padding:18px; border-radius:8px; text-align:center; font-size:.8rem; }
+    .ad-color-input { min-height:34px; padding:3px 6px; }
+    @media(max-width:650px){ .form-row,.ad-source-row{grid-template-columns:1fr} .ad-editor-head,.ad-manager-section-title{align-items:flex-start} .ad-manager-section-title{flex-direction:column} }
+
+    /* Compact expandable Ads Manager */
+    .ad-manager-toolbar{position:sticky;top:calc(var(--sl-bar-h) + 6px);z-index:20;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px;background:rgba(8,13,26,.96);border:1px solid rgba(255,255,255,.1);border-radius:10px;margin-bottom:14px;backdrop-filter:blur(12px)}
+    .ad-manager-tabs{display:flex;gap:6px}.ad-manager-tab{border:1px solid transparent;background:#141c2e;color:#94a3b8;border-radius:7px;padding:8px 12px;font-size:.78rem;cursor:pointer}.ad-manager-tab span{display:inline-grid;place-items:center;min-width:20px;height:20px;margin-left:5px;border-radius:10px;background:rgba(255,255,255,.08);font-size:.65rem}.ad-manager-tab.active{background:#00f2fe;color:#051322}.ad-manager-tab.active span{background:rgba(0,0,0,.14)}
+    .ad-expand-actions{display:flex;gap:5px}.ad-expand-actions button{border:0;background:transparent;color:#7f96b8;font-size:.7rem;cursor:pointer;padding:6px}.ad-expand-actions button:hover{color:#00f2fe}
+    .ad-editor-list{display:grid;gap:8px}.ad-editor{padding:0;margin:0;overflow:hidden;background:#080d1a;border:1px solid rgba(255,255,255,.1);border-radius:10px}.ad-editor[open]{border-color:rgba(0,242,254,.36);box-shadow:0 10px 28px rgba(0,0,0,.22)}
+    .ad-editor-summary{list-style:none;display:flex;align-items:center;gap:11px;min-height:58px;padding:10px 13px;cursor:pointer;user-select:none}.ad-editor-summary::-webkit-details-marker{display:none}.ad-editor-summary:hover{background:rgba(255,255,255,.025)}
+    .ad-summary-icon{display:grid;place-items:center;flex:0 0 36px;width:36px;height:36px;border-radius:9px;color:#00f2fe;background:rgba(0,242,254,.09);border:1px solid rgba(0,242,254,.2);overflow:hidden}.ad-summary-icon .sl-ic{width:20px;height:20px;margin:0}.ad-summary-icon img{width:100%;height:100%;object-fit:cover}
+    .ad-summary-copy{min-width:0;flex:1}.ad-summary-copy strong{display:block;color:#eaf4ff;font-size:.84rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ad-summary-copy small{display:block;color:#7188aa;font-size:.68rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+    .ad-summary-meta{color:#8fa6c5;font-size:.67rem;white-space:nowrap}.ad-summary-status{padding:3px 7px;border-radius:10px;background:rgba(52,211,153,.1);color:#34d399;font-size:.62rem}.ad-summary-status.off{background:rgba(148,163,184,.1);color:#94a3b8}.ad-summary-chevron{color:#00f2fe;transition:transform .2s}.ad-editor[open] .ad-summary-chevron{transform:rotate(180deg)}
+    .ad-editor-body{padding:15px;border-top:1px solid rgba(255,255,255,.08)}.ad-editor-body .ad-editor-head{margin-bottom:10px}.ad-editor-body .form-group{margin-bottom:10px}.ad-icon-preview{width:34px;height:34px;overflow:hidden;border-radius:7px}.ad-icon-preview img{width:100%;height:100%;object-fit:cover}
+    .quality-editor-box{background:#080d1a;border:1px solid rgba(56,189,248,.22);border-radius:7px;padding:12px;margin-bottom:12px}.quality-editor-title{color:#38bdf8;font-size:.85rem;font-weight:800}.quality-editor-note{color:#8298b9;font-size:.72rem;line-height:1.45;margin:3px 0 11px}.quality-upload-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}@media(max-width:560px){.quality-upload-grid{grid-template-columns:1fr}}.reward-edit-preview{aspect-ratio:16/9;background:#000;border-radius:7px;overflow:hidden;margin-bottom:12px}.reward-edit-preview video,.reward-edit-preview iframe{width:100%;height:100%;border:0;display:block;object-fit:contain}
+    @media(max-width:650px){.ad-manager-toolbar{align-items:stretch;flex-direction:column}.ad-manager-tabs{display:grid;grid-template-columns:1fr 1fr}.ad-expand-actions{justify-content:flex-end}.ad-summary-meta{display:none}.ad-editor-summary{gap:8px}.ad-summary-status{display:none}}
+    .thumb-edit-preview{display:block;width:150px;aspect-ratio:16/9;object-fit:cover;background:#050a13;border:1px solid rgba(255,255,255,.12);border-radius:8px;margin:0 0 12px}
+
+    /* Legitimate multi-provider live balances */
+    .balance-card,.balance-connect{max-width:980px;margin-left:auto;margin-right:auto}.balance-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}.balance-summary>div{background:#080d1a;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:12px}.balance-summary span{display:block;color:#8298b9;font-size:.68rem}.balance-summary strong{display:block;color:#00f2fe;font-size:1rem;margin-top:4px}.balance-trust-note{padding:10px 12px;border-left:3px solid #00f2fe;background:rgba(0,242,254,.05);color:#8fa6c5;font-size:.75rem;line-height:1.5;margin-bottom:14px}.balance-sources-list{display:grid;gap:9px}.balance-source{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:16px;padding:13px;background:#080d1a;border:1px solid rgba(255,255,255,.09);border-radius:9px}.balance-provider-name{color:#f1f6ff;font-size:.88rem;font-weight:800}.balance-provider-meta{color:#7188aa;font-size:.68rem;margin-top:3px;word-break:break-all}.balance-amount{text-align:right}.balance-amount strong{display:block;color:#34d399;font-size:1.15rem}.balance-amount span{color:#7188aa;font-size:.63rem}.balance-status{display:inline-flex;padding:2px 7px;border-radius:10px;background:rgba(148,163,184,.1);color:#94a3b8;font-size:.58rem;text-transform:uppercase;letter-spacing:.05em}.balance-status.live{color:#34d399;background:rgba(52,211,153,.1)}.balance-status.error{color:#f87171;background:rgba(248,113,113,.1)}.balance-status.syncing{color:#38bdf8}.balance-source-actions{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}.balance-source-actions .btn{font-size:.66rem;padding:5px 8px}.balance-empty{padding:22px;text-align:center;color:#8298b9;border:1px dashed rgba(255,255,255,.12);border-radius:9px;font-size:.78rem}.balance-connect summary{cursor:pointer;color:#00f2fe;font-size:.9rem;font-weight:800}.balance-connect summary span{float:right;color:#7188aa;font-size:.68rem;font-weight:400}.balance-connect[open] summary{margin-bottom:16px}.balance-api-help{background:#080d1a;border-radius:7px;padding:10px;color:#8298b9;font-size:.7rem;line-height:1.5;margin-bottom:12px}.balance-api-help code{color:#bffaff;word-break:break-all}@media(max-width:720px){.balance-summary{grid-template-columns:1fr}.balance-source{grid-template-columns:1fr auto}.balance-source-actions{grid-column:1/-1;justify-content:flex-start}.balance-connect summary span{display:none}}
+
+    /* Expandable, wrapping Developer Hub tabs */
+    .nav-tabs{flex:1 1 700px;flex-wrap:wrap;min-width:0}
+    .nav-tabs .tab-btn{flex:1 1 126px;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;text-decoration:none;min-height:32px}
+    .nav-tabs .tab-btn .sl-ic{width:16px;height:16px;margin:0;flex:none}
+    @media(max-width:780px){.nav-tabs{order:3;flex-basis:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:4px}.nav-tabs .tab-btn{width:100%;padding:8px 9px}.nav-tabs .tab-btn:last-child{grid-column:1/-1}}
+    @media(max-width:390px){.nav-tabs .tab-btn{font-size:.72rem;white-space:normal;line-height:1.25}}
+  </style>
+</head>
+<body>
+
+  <!-- Compact Top Bar -->
+  <header class="admin-bar">
+    <div class="brand">
+      <span>⚡</span> StreamLock &nbsp;|&nbsp; Developer Hub
+    </div>
+
+    <nav class="nav-tabs">
+      <button class="tab-btn active" data-pane="videos" onclick="showPane('videos')">📋 Manage Videos</button>
+      <a class="tab-btn manage-lists-tab" href="groups.html"><span class="sl-ic" data-icon="list"></span><span>Manage Video Lists</span></a>
+      <button class="tab-btn" data-pane="upload" onclick="showPane('upload')">➕ Upload Video</button>
+      <button class="tab-btn" data-pane="ads-manager" onclick="showPane('ads-manager')">🖼️ Ads Management</button>
+      <button class="tab-btn" data-pane="stats" onclick="showPane('stats')">💰 Balance</button>
+    </nav>
+
+  </header>
+
+  <main class="main-box">
+
+    <!-- TAB 1: MANAGE VIDEOS TABLE -->
+    <section id="pane-videos" class="pane active">
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h2 class="card-title">All Monetized Videos</h2>
+            <p class="card-sub">Instant zero-cloud playback, 1-click copy link, edit sponsor ads & recommendations.</p>
+          </div>
+          <button class="btn btn-primary" onclick="showPane('upload')">+ Add New Video</button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Video</th>
+                <th>Shareable Watch Link</th>
+                <th>Sponsor Ad</th>
+                <th>Source</th>
+                <th>Views</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="videos-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: UPLOAD & ADD VIDEO -->
+    <section id="pane-upload" class="pane">
+      <div class="card" style="max-width: 640px; margin: 0 auto;">
+        <h2 class="card-title" id="form-heading">Monetize New Video</h2>
+        <p class="card-sub" style="margin-bottom:12px;">Choose direct file upload (zero-cloud) or paste link.</p>
+
+        <div style="display:flex; gap:8px; margin-bottom:14px;">
+          <button type="button" class="source-tab-btn active" id="btn-src-file" onclick="setSourceMode('file')">
+            📁 Direct File Upload
+          </button>
+          <button type="button" class="source-tab-btn" id="btn-src-url" onclick="setSourceMode('url')">
+            🔗 Web / Drive Link
+          </button>
+        </div>
+
+        <form id="video-upload-form" onsubmit="handleVideoSubmit(event)">
+          <input type="hidden" id="edit-id" value="">
+
+          <div class="form-group">
+            <label class="form-label">Video Title *</label>
+            <input type="text" id="inp-title" class="form-input" placeholder="e.g. Secret Highlights & Tournament Tricks" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea id="inp-desc" class="form-textarea" rows="2" placeholder="Brief video note..."></textarea>
+          </div>
+
+          <div id="box-src-file">
+            <div class="form-group">
+              <label class="form-label">Select Video File (MP4, WebM, MKV)</label>
+              <input type="file" id="inp-file" class="form-input" accept="video/mp4,video/webm,video/mkv,video/quicktime">
+            </div>
+          </div>
+
+          <div id="box-src-url" style="display:none;">
+            <div class="form-group">
+              <label class="form-label">Platform / Direct Video URL</label>
+              <input type="text" id="inp-url" class="form-input" placeholder="YouTube, Drive, Vimeo, TikTok, Facebook, MP4...">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Thumbnail Source</label>
+            <select id="inp-thumb-source" class="form-select" onchange="setThumbSourceMode(this.value)"><option value="url">Image URL</option><option value="file">Upload PNG / JPG / WebP / GIF</option></select>
+          </div>
+          <div class="form-group" id="box-thumb-url"><input type="url" id="inp-thumb" class="form-input" placeholder="https://example.com/thumbnail.png"></div>
+          <div class="form-group" id="box-thumb-file" style="display:none;"><input type="file" id="inp-thumb-file" class="form-input" accept="image/png,image/jpeg,image/webp,image/gif,image/avif"><div id="thumb-current-file" class="ad-existing-file" style="display:none;">Custom uploaded thumbnail saved.</div></div>
+          <img id="thumb-edit-preview" class="thumb-edit-preview" alt="Thumbnail preview" style="display:none;">
+
+          <!-- Genuine uploaded quality renditions; no misleading URL labels. -->
+          <div class="quality-editor-box">
+            <div class="quality-editor-title">StreamLock Premium Quality</div>
+            <p class="quality-editor-note">Upload real renditions for genuine resolution switching. HD and 1080p require a reward; 720p, 480p, and 360p are free. Auto uses the original source. External players offer only resolutions their playback API supports.</p>
+            <div class="quality-upload-grid">
+              <div class="form-group">
+                <label class="form-label">HD Video File · Highest · Rewarded</label>
+                <input type="file" id="inp-quality-hd" class="form-input quality-file" data-quality="hd" accept="video/mp4,video/webm,video/ogg,video/quicktime">
+                <div class="ad-existing-file" id="quality-hd-current" style="display:none;">Genuine HD rendition saved. Choose a file only to replace it.</div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">1080p Video File · Second · Rewarded</label>
+                <input type="file" id="inp-quality-1080" class="form-input quality-file" data-quality="1080" accept="video/mp4,video/webm,video/ogg,video/quicktime">
+                <div class="ad-existing-file" id="quality-1080-current" style="display:none;">Genuine 1080p rendition saved. Choose a file only to replace it.</div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">720p Video File · Free</label>
+                <input type="file" id="inp-quality-720" class="form-input quality-file" data-quality="720" accept="video/mp4,video/webm,video/ogg,video/quicktime">
+                <div class="ad-existing-file" id="quality-720-current" style="display:none;">Genuine 720p rendition saved. Choose a file only to replace it.</div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">480p Video File · Free</label>
+                <input type="file" id="inp-quality-480" class="form-input quality-file" data-quality="480" accept="video/mp4,video/webm,video/ogg,video/quicktime">
+                <div class="ad-existing-file" id="quality-480-current" style="display:none;">Genuine 480p rendition saved. Choose a file only to replace it.</div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">360p Video File · Free</label>
+                <input type="file" id="inp-quality-360" class="form-input quality-file" data-quality="360" accept="video/mp4,video/webm,video/ogg,video/quicktime">
+                <div class="ad-existing-file" id="quality-360-current" style="display:none;">Genuine 360p rendition saved. Choose a file only to replace it.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sponsor Ad Settings -->
+          <div style="background:#080d1a; border:1px solid rgba(0,242,254,0.25); border-radius:6px; padding:12px; margin-bottom:12px;">
+            <div style="font-weight:700; color:#00f2fe; margin-bottom:8px; font-size:0.85rem;">
+              🎯 Fullscreen Rewarded Ad Configuration
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Countdown Seconds</label>
+                <input type="number" id="inp-duration" class="form-input" value="10" min="3" max="60">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Sponsor Headline</label>
+                <input type="text" id="inp-reward-title" class="form-input" value="Top Action Shooter: Free 1,000 Starter Gems">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Check Offer Link (Where viewers go upon clicking)</label>
+              <input type="url" id="inp-reward-link" class="form-input" value="https://google.com">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Sponsor Promo Text</label>
+              <input type="text" id="inp-reward-desc" class="form-input" value="Join players in live PvP combat. Claim your free starter weapon!">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Commercial Ad Video Source</label>
+              <select id="inp-reward-source" class="form-select" onchange="setRewardSourceMode(this.value)">
+                <option value="url">Platform / Direct Video URL</option><option value="file">Upload Video</option>
+              </select>
+            </div>
+            <div class="form-group" id="box-reward-url">
+              <label class="form-label">Commercial Video URL</label>
+              <input type="text" id="inp-reward-video" class="form-input" value="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyBlazes.mp4" placeholder="YouTube, Drive, Vimeo, TikTok, MP4...">
+            </div>
+            <div class="form-group" id="box-reward-file" style="display:none;">
+              <label class="form-label">Upload Commercial Video</label>
+              <input type="file" id="inp-reward-file" class="form-input" accept="video/mp4,video/webm,video/ogg,video/quicktime">
+              <div id="reward-current-file" class="ad-existing-file" style="display:none;">Uploaded commercial saved. It is also visible in Ads Management.</div>
+            </div>
+            <div id="reward-edit-preview" class="reward-edit-preview" style="display:none;"></div>
+          </div>
+
+          <!-- Chained Next Recommendations -->
+          <div style="background:#080d1a; border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:12px; margin-bottom:14px;">
+            <div class="form-group">
+              <label class="form-label">Featured Next Video</label>
+              <select id="select-featured" class="form-select">
+                <option value="">None (Automatic)</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:8px;">
+            <button type="submit" class="btn btn-primary" id="btn-submit" style="flex:1; padding:8px;">
+              Save & Post Monetized Link
+            </button>
+            <button type="button" class="btn btn-outline" id="btn-cancel-edit" style="display:none;" onclick="cancelEdit()">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- TAB 3: CENTRAL ADS MANAGER -->
+    <section id="pane-ads-manager" class="pane">
+      <div class="card ad-manager-card">
+        <div class="card-head">
+          <div>
+            <h2 class="card-title">Ads Management</h2>
+            <p class="card-sub">Control every banner placement and each video's rewarded sponsor ad from one place.</p>
+          </div>
+          <button type="button" class="btn btn-primary" onclick="addBannerAd()">+ Add Banner Ad</button>
+        </div>
+
+        <div class="ad-manager-note">
+          Use uploads or URLs from YouTube, Drive, Vimeo, Dropbox, TikTok, Facebook, Instagram, Twitch, Dailymotion, and direct video hosts. Choose exactly where each ad appears and whether it loops.
+        </div>
+
+        <div class="ad-manager-toolbar">
+          <div class="ad-manager-tabs">
+            <button type="button" class="ad-manager-tab active" id="ad-tab-banners" onclick="showAdManagerSection('banners')">Banner Ads <span id="banner-ad-count">0</span></button>
+            <button type="button" class="ad-manager-tab" id="ad-tab-rewarded" onclick="showAdManagerSection('rewarded')">Rewarded Ads <span id="rewarded-ad-count">0</span></button>
+          </div>
+          <div class="ad-expand-actions"><button type="button" onclick="toggleAllAdEditors(true)">Expand all</button><button type="button" onclick="toggleAllAdEditors(false)">Collapse all</button></div>
+        </div>
+
+        <div id="banner-ads-section">
+        <div class="ad-manager-section-title">
+          <div>
+            <h3>Banner Ads & Page Placements</h3>
+            <p>Watch Page, Viewer Profile, Video Lists, and Sign In.</p>
+          </div>
+        </div>
+        <div id="banner-ads-list" class="ad-editor-list"></div>
+        </div>
+
+        <div id="rewarded-ads-section" style="display:none;">
+        <div class="ad-manager-section-title">
+          <div>
+            <h3>Fullscreen Rewarded Ads by Video</h3>
+            <p>The same sponsor settings remain visible in Manage Videos; changes made here stay synchronized.</p>
+          </div>
+        </div>
+        <div id="rewarded-ads-list" class="ad-editor-list"></div>
+        </div>
+
+        <button type="button" class="btn btn-primary ad-save-all" id="btn-save-ads" onclick="saveBannersConfig()">
+          Save All Ads & Placements
+        </button>
+      </div>
+    </section>
+
+    <!-- TAB 4: LIVE BALANCE SOURCES -->
+    <section id="pane-stats" class="pane">
+      <div class="card balance-card">
+        <div class="card-head">
+          <div><h2 class="card-title">Balance</h2><p class="card-sub">Real balances from connected ad networks, e-wallets, and payment providers. No simulated earnings.</p></div>
+          <button type="button" class="btn btn-primary" onclick="refreshBalanceSources()">Refresh Live Balances</button>
+        </div>
+        <div class="balance-summary">
+          <div><span>Connected Sources</span><strong id="balance-source-count">0</strong></div>
+          <div><span>Syncing Successfully</span><strong id="balance-live-count">0</strong></div>
+          <div><span>Last Successful Sync</span><strong id="balance-last-sync">Never</strong></div>
+        </div>
+        <div class="balance-trust-note">Balances appear only after a successful response from your provider or secure balance API. Payouts and withdrawals always open the provider's official website or app.</div>
+        <div id="balance-sources-list" class="balance-sources-list"></div>
+      </div>
+
+      <details class="card balance-connect" id="balance-connect-card">
+        <summary>Connect a Balance Source <span>Ad networks, e-wallets, banks, and more</span></summary>
+        <form id="balance-source-form" onsubmit="saveBalanceSource(event)">
+          <input type="hidden" id="balance-edit-id">
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Provider</label><select id="balance-provider" class="form-select" onchange="updateProviderDashboard()"><option value="monetag">Monetag</option><option value="propellerads">PropellerAds</option><option value="adsterra">Adsterra</option><option value="adsense">Google AdSense</option><option value="gcash">GCash</option><option value="maya">Maya</option><option value="paypal">PayPal</option><option value="payoneer">Payoneer</option><option value="wise">Wise</option><option value="bank">Bank / Other</option></select></div>
+            <div class="form-group"><label class="form-label">Display Name</label><input type="text" id="balance-name" class="form-input" placeholder="e.g. Main Monetag Account" required></div>
+          </div>
+          <div class="form-group"><label class="form-label">Official Dashboard / Payout URL</label><input type="url" id="balance-dashboard" class="form-input" placeholder="https://provider.com/dashboard" required></div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Secure Live Balance API URL (Optional)</label><input type="url" id="balance-api" class="form-input" placeholder="https://your-secure-backend.com/balance/provider"></div>
+            <div class="form-group"><label class="form-label">Currency</label><select id="balance-currency" class="form-select"><option>USD</option><option>PHP</option><option>EUR</option><option>GBP</option><option>JPY</option><option>AUD</option><option>CAD</option><option>SGD</option></select></div>
+          </div>
+          <div class="balance-api-help">The endpoint must return JSON such as <code>{"balance": 125.50, "currency": "USD", "updatedAt": "..."}</code>. Keep provider secret keys on your own secure backend; never place them in this static website. The provider/backend must allow browser requests (CORS).</div>
+          <div style="display:flex;gap:8px;"><button type="submit" class="btn btn-primary">Save Balance Source</button><button type="button" class="btn btn-outline" onclick="resetBalanceForm()">Clear</button></div>
+        </form>
+      </details>
+    </section>
+
+  </main>
+
+  <div class="toast" id="toast">Copied to clipboard!</div>
+
+  <script src="storage.js"></script>
+  <script>
+    // Enforce exclusive Developer access
+    enforceAdminAuth();
+
+    let appData = null;
+    let currentSourceMode = 'file';
+
+    function showPane(paneId) {
+      document.querySelectorAll('.pane').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+      const target = document.getElementById('pane-' + paneId);
+      if (target) target.classList.add('active');
+
+      const activeTab = document.querySelector('.tab-btn[data-pane="' + paneId + '"]');
+      if (activeTab) activeTab.classList.add('active');
+    }
+
+    function setSourceMode(mode) {
+      currentSourceMode = mode;
+      document.getElementById('btn-src-file').classList.toggle('active', mode === 'file');
+      document.getElementById('btn-src-url').classList.toggle('active', mode === 'url');
+      document.getElementById('box-src-file').style.display = mode === 'file' ? 'block' : 'none';
+      document.getElementById('box-src-url').style.display = mode === 'url' ? 'block' : 'none';
+    }
+
+    function getWatchUrl(id) {
+      const base = window.location.origin + window.location.pathname.replace('index.html', '');
+      return base.replace(/\/$/, '') + '/watch.html?id=' + id;
+    }
+
+    function init() {
+      appData = getLocalData();
+      renderBalanceSources();
+      refreshBalanceSources();
+      renderVideos();
+      populateNextChoices();
+      populateBannersForm();
+    }
+
+    const BALANCE_PROVIDERS = {
+      monetag:{name:'Monetag',url:'https://monetag.com/'}, propellerads:{name:'PropellerAds',url:'https://propellerads.com/'},
+      adsterra:{name:'Adsterra',url:'https://adsterra.com/'}, adsense:{name:'Google AdSense',url:'https://adsense.google.com/'},
+      gcash:{name:'GCash',url:'https://www.gcash.com/'}, maya:{name:'Maya',url:'https://www.mayabank.ph/'},
+      paypal:{name:'PayPal',url:'https://www.paypal.com/'}, payoneer:{name:'Payoneer',url:'https://www.payoneer.com/'},
+      wise:{name:'Wise',url:'https://wise.com/'}, bank:{name:'Bank / Other',url:''}
+    };
+    let balanceRefreshTimer = null;
+
+    function getBalanceSources() {
+      if (!Array.isArray(appData.settings.balanceSources)) appData.settings.balanceSources = [];
+      return appData.settings.balanceSources;
+    }
+
+    function renderBalanceSources() {
+      const sources = getBalanceSources();
+      const list = document.getElementById('balance-sources-list');
+      document.getElementById('balance-source-count').innerText = sources.length;
+      document.getElementById('balance-live-count').innerText = sources.filter(source => source.status === 'live').length;
+      const syncDates = sources.filter(source => source.lastSync).map(source => new Date(source.lastSync)).filter(date => !isNaN(date));
+      const latest = syncDates.length ? new Date(Math.max(...syncDates.map(date => date.getTime()))) : null;
+      document.getElementById('balance-last-sync').innerText = latest ? latest.toLocaleString() : 'Never';
+      if (!sources.length) { list.innerHTML = '<div class="balance-empty">No balance sources connected. Use “Connect a Balance Source” below. No estimated or invented balance is shown.</div>'; return; }
+      list.innerHTML = sources.map(source => {
+        const hasBalance = source.status === 'live' && Number.isFinite(Number(source.lastBalance));
+        const amount = hasBalance ? Number(source.lastBalance).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) + ' ' + escapeHtml(source.currency || 'USD') : '—';
+        const status = source.status || 'not-connected';
+        const statusText = {live:'Live',error:'Sync failed',syncing:'Syncing','not-connected':'Not connected',dashboard:'Dashboard only'}[status] || status;
+        const syncText = source.lastSync && status === 'live' ? 'Synced ' + new Date(source.lastSync).toLocaleString() : (source.error || 'No live balance response');
+        return '<div class="balance-source"><div><div class="balance-provider-name">' + escapeHtml(source.name) + '</div><div class="balance-provider-meta">' + escapeHtml(source.providerName || 'Provider') + ' · ' + syncText + '</div></div>' +
+          '<div class="balance-amount"><strong>' + amount + '</strong><span class="balance-status ' + status + '">' + statusText + '</span></div>' +
+          '<div class="balance-source-actions">' + (source.apiUrl ? '<button class="btn btn-outline" onclick="refreshBalanceSource(\'' + source.id + '\')">Sync</button>' : '') + '<a class="btn btn-primary" href="' + escapeHtml(slSafeAdLink(source.dashboardUrl)) + '" target="_blank" rel="noopener">Official Dashboard / Payout ↗</a><button class="btn btn-outline" onclick="editBalanceSource(\'' + source.id + '\')">Edit</button><button class="btn btn-danger" onclick="deleteBalanceSource(\'' + source.id + '\')">Delete</button></div></div>';
+      }).join('');
+    }
+
+    function updateProviderDashboard() {
+      const provider = BALANCE_PROVIDERS[document.getElementById('balance-provider').value];
+      if (provider) document.getElementById('balance-dashboard').value = provider.url;
+      if (provider && !document.getElementById('balance-name').value.trim()) document.getElementById('balance-name').value = provider.name;
+    }
+
+    function resetBalanceForm() {
+      document.getElementById('balance-source-form').reset();
+      document.getElementById('balance-edit-id').value = '';
+      document.getElementById('balance-connect-card').open = false;
+    }
+
+    function editBalanceSource(id) {
+      const source = getBalanceSources().find(item => item.id === id); if (!source) return;
+      document.getElementById('balance-edit-id').value = id;
+      document.getElementById('balance-provider').value = source.provider || 'bank';
+      document.getElementById('balance-name').value = source.name || '';
+      document.getElementById('balance-dashboard').value = source.dashboardUrl || '';
+      document.getElementById('balance-api').value = source.apiUrl || '';
+      document.getElementById('balance-currency').value = source.currency || 'USD';
+      document.getElementById('balance-connect-card').open = true;
+      document.getElementById('balance-connect-card').scrollIntoView({behavior:'smooth',block:'center'});
+    }
+
+    function saveBalanceSource(event) {
+      event.preventDefault();
+      const id = document.getElementById('balance-edit-id').value || ('balance-' + Math.random().toString(36).slice(2,10));
+      const provider = document.getElementById('balance-provider').value;
+      const existing = getBalanceSources().find(item => item.id === id) || {};
+      const source = {...existing,id,provider,providerName:(BALANCE_PROVIDERS[provider] || BALANCE_PROVIDERS.bank).name,
+        name:document.getElementById('balance-name').value.trim(),dashboardUrl:document.getElementById('balance-dashboard').value.trim(),
+        apiUrl:document.getElementById('balance-api').value.trim(),currency:document.getElementById('balance-currency').value,
+        status:document.getElementById('balance-api').value.trim() ? 'not-connected' : 'dashboard'};
+      const index = getBalanceSources().findIndex(item => item.id === id);
+      if (index === -1) getBalanceSources().push(source); else getBalanceSources()[index] = source;
+      saveLocalData(appData); resetBalanceForm(); renderBalanceSources();
+      if (source.apiUrl) refreshBalanceSource(id);
+      showToast('Balance source saved. Payouts use the official provider dashboard.');
+    }
+
+    function readBalanceValue(data) {
+      if (typeof data === 'number') return data;
+      if (!data || typeof data !== 'object') return NaN;
+      const keys = ['balance','available_balance','availableBalance','available','amount','earnings'];
+      for (const key of keys) {
+        if (typeof data[key] === 'number' || (typeof data[key] === 'string' && data[key].trim() !== '')) {
+          const value = Number(data[key]); if (Number.isFinite(value)) return value;
+        }
+      }
+      for (const key of ['data','result','balance','account','summary']) if (data[key] && typeof data[key] === 'object') {
+        const value = readBalanceValue(data[key]); if (Number.isFinite(value)) return value;
+      }
+      return NaN;
+    }
+
+    async function refreshBalanceSource(id) {
+      const source = getBalanceSources().find(item => item.id === id);
+      if (!source || !source.apiUrl || source.status === 'syncing') return;
+      source.status = 'syncing'; source.error = ''; renderBalanceSources();
+      try {
+        const response = await fetch(source.apiUrl,{cache:'no-store',headers:{'Accept':'application/json'}});
+        if (!response.ok) throw new Error('Provider returned HTTP ' + response.status);
+        const data = await response.json(); const balance = readBalanceValue(data);
+        if (!Number.isFinite(balance)) throw new Error('Response did not contain a numeric balance');
+        source.lastBalance = balance; source.currency = data.currency || data.currencyCode || source.currency || 'USD';
+        source.lastSync = data.updatedAt || data.updated_at || new Date().toISOString(); source.status = 'live'; source.error = '';
+      } catch (error) {
+        source.status = 'error'; source.lastBalance = null; source.lastSync = null; source.error = error.message;
+      }
+      saveLocalData(appData); renderBalanceSources();
+    }
+
+    async function refreshBalanceSources() {
+      const sources = getBalanceSources().filter(source => source.apiUrl);
+      await Promise.all(sources.map(source => refreshBalanceSource(source.id)));
+      if (!balanceRefreshTimer) balanceRefreshTimer = setInterval(() => { if (document.getElementById('pane-stats').classList.contains('active')) refreshBalanceSources(); },60000);
+    }
+
+    async function deleteBalanceSource(id) {
+      if (!await slConfirm('Remove this balance source? This does not affect your provider account.','Remove Balance Source')) return;
+      appData.settings.balanceSources = getBalanceSources().filter(source => source.id !== id);
+      saveLocalData(appData); renderBalanceSources(); showToast('Balance source removed');
+    }
+
+    function renderVideos() {
+      const tbody = document.getElementById('videos-tbody');
+      const videos = appData.links || [];
+      if (videos.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#94a3b8; padding:1.5rem;">No videos uploaded yet.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = videos.map(v => {
+        const fullUrl = getWatchUrl(v.id);
+        const sourceLabel = v.videoSourceType === 'file' ? '📁 Local Binary' : '🔗 Web Link';
+        return `
+          <tr>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <img src="${v.thumbnail}" style="width:44px; height:30px; border-radius:4px; object-fit:cover; background:#000;" alt="">
+                <div>
+                  <div style="font-weight:700;">${escapeHtml(v.title)}</div>
+                  <div style="font-size:0.72rem; color:#64748b;">ID: ${v.id}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div style="display:flex; align-items:center; gap:4px;">
+                <div class="link-copy-box">${fullUrl}</div>
+                <button class="btn btn-copy" onclick="copyUrl('${fullUrl}')">Copy</button>
+              </div>
+            </td>
+            <td>
+              <div style="font-size:0.75rem; font-weight:600;">${v.rewardAdDuration || 10}s Ad</div>
+              <a href="${v.rewardAdLink || '#'}" target="_blank" style="color:#00f2fe; font-size:0.72rem; text-decoration:none;">Target ↗</a>
+            </td>
+            <td>
+              <span style="background:#141c2e; color:#38bdf8; padding:2px 6px; border-radius:6px; font-size:0.72rem;">
+                ${sourceLabel}
+              </span>
+            </td>
+            <td><strong style="color:#10b981;">${v.views || 0}</strong></td>
+            <td>
+              <div style="display:flex; gap:4px;">
+                <a href="${fullUrl}" target="_blank" class="btn btn-outline" style="padding:3px 6px; font-size:0.72rem;">Watch ↗</a>
+                <button class="btn btn-edit" onclick="startEditVideo('${v.id}')">Edit</button>
+                <button class="btn btn-danger" onclick="deleteVideo('${v.id}')">Del</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function setThumbSourceMode(mode) {
+      document.getElementById('box-thumb-url').style.display = mode === 'file' ? 'none' : '';
+      document.getElementById('box-thumb-file').style.display = mode === 'file' ? '' : 'none';
+    }
+
+    async function previewVideoThumbnail(video) {
+      const image = document.getElementById('thumb-edit-preview');
+      const source = video ? video.thumbnail : document.getElementById('inp-thumb').value.trim();
+      const url = await resolveStoredImage(source);
+      if (url) { image.src = url; image.style.display = ''; }
+      else { image.style.display = 'none'; image.removeAttribute('src'); }
+    }
+
+    function setRewardSourceMode(mode) {
+      document.getElementById('box-reward-url').style.display = mode === 'file' ? 'none' : '';
+      document.getElementById('box-reward-file').style.display = mode === 'file' ? '' : 'none';
+    }
+
+    async function previewRewardAdInEditor(video) {
+      const host = document.getElementById('reward-edit-preview');
+      const source = video ? (video.rewardAdVideo || '') : document.getElementById('inp-reward-video').value.trim();
+      if (!source) { host.style.display = 'none'; host.innerHTML = ''; return; }
+      host.style.display = '';
+      await mountAdaptiveMedia(host,source,{ fileId:video ? 'rewarded-' + video.id : '', autoplay:false, muted:true, loop:false, controls:true, eager:true });
+    }
+
+    function populateNextChoices() {
+      const videos = appData.links || [];
+      const selectFeatured = document.getElementById('select-featured');
+      selectFeatured.innerHTML = '<option value="">None (Automatic)</option>' + 
+        videos.map(v => `<option value="${v.id}">${escapeHtml(v.title)}</option>`).join('');
+    }
+
+    function adSourceHtml(ad, isRewarded) {
+      const isFile = ad.videoSourceType === 'file' || (ad.videoUrl || '').startsWith('indexeddb://');
+      return `
+        <div class="ad-source-row">
+          <div class="form-group">
+            <label class="form-label">Video Source</label>
+            <select class="form-select ad-source-select" onchange="toggleAdSource(this)">
+              <option value="url" ${isFile ? '' : 'selected'}>Direct video URL</option>
+              <option value="file" ${isFile ? 'selected' : ''}>Upload video</option>
+            </select>
+          </div>
+          <div class="form-group ad-url-wrap" style="display:${isFile ? 'none' : 'block'};">
+            <label class="form-label">Platform / Direct Video URL</label>
+            <input type="text" class="form-input ad-video-url" value="${isFile ? '' : escapeHtml(ad.videoUrl || '')}" placeholder="YouTube, Drive, Vimeo, TikTok, MP4...">
+          </div>
+          <div class="form-group ad-file-wrap" style="display:${isFile ? 'block' : 'none'};">
+            <label class="form-label">Upload MP4 / WebM</label>
+            <input type="file" class="form-input ad-video-file" accept="video/mp4,video/webm,video/ogg">
+            ${isFile ? '<div class="ad-existing-file">An uploaded video is saved. Choose a new file only to replace it.</div>' : ''}
+          </div>
+        </div>`;
+    }
+
+    function adIconOptions(selected) {
+      return Object.keys(SL_ICON_PATHS).map(icon => `<option value="${icon}" ${icon === selected ? 'selected' : ''}>${icon.replace(/([A-Z])/g,' $1').replace(/^./,c => c.toUpperCase())}</option>`).join('');
+    }
+
+    function bannerEditorHtml(ad) {
+      const id = ad.id || ('ad-' + Math.random().toString(36).slice(2, 10));
+      const placements = ad.placements || ['watch'];
+      const pages = [['watch','Watch Page'],['profile','Viewer Profile'],['groups','Video Lists'],['login','Sign In']];
+      const placementText = placements.length ? placements.map(p => ({watch:'Watch',profile:'Profile',groups:'Lists',login:'Sign In'}[p] || p)).join(' · ') : 'No pages';
+      return `
+        <details class="ad-editor banner-ad-editor" data-ad-id="${id}">
+          <summary class="ad-editor-summary">
+            <span class="ad-summary-icon">${slAdIconHtml(ad)}</span>
+            <span class="ad-summary-copy"><strong>${escapeHtml(ad.name || ad.title || 'Banner Ad')}</strong><small>${escapeHtml(ad.title || 'No headline')}</small></span>
+            <span class="ad-summary-meta">${placementText}</span><span class="ad-summary-status ${ad.enabled === false ? 'off' : ''}">${ad.enabled === false ? 'Off' : 'Active'}</span><span class="ad-summary-chevron">▾</span>
+          </summary>
+          <div class="ad-editor-body">
+            <div class="ad-editor-head"><div class="ad-editor-title">Banner Content</div><div class="ad-editor-actions"><label class="ad-toggle"><input type="checkbox" class="ad-enabled" ${ad.enabled !== false ? 'checked' : ''}> Active</label><label class="ad-toggle"><input type="checkbox" class="ad-loop" ${ad.loop !== false ? 'checked' : ''}> Loop video</label><button type="button" class="btn btn-danger" onclick="deleteBannerAd(this)">Delete</button></div></div>
+            <div class="form-row"><div class="form-group"><label class="form-label">Internal Ad Name</label><input type="text" class="form-input ad-name" value="${escapeHtml(ad.name || '')}" placeholder="e.g. July VPN Promo"></div><div class="form-group"><label class="form-label">Headline</label><input type="text" class="form-input ad-title" value="${escapeHtml(ad.title || '')}" placeholder="Sponsor headline"></div></div>
+            <div class="form-group"><label class="form-label">Description</label><input type="text" class="form-input ad-subtitle" value="${escapeHtml(ad.subtitle || '')}" placeholder="Short sponsor description"></div>
+            <div class="form-row"><div class="form-group"><label class="form-label">Target Link</label><input type="url" class="form-input ad-link" value="${escapeHtml(ad.linkUrl || 'https://google.com')}"></div><div class="form-group"><label class="form-label">Button Text</label><input type="text" class="form-input ad-button" value="${escapeHtml(ad.buttonText || 'Learn More')}"></div></div>
+            ${adSourceHtml({ videoSourceType: ad.videoSourceType, videoUrl: ad.videoUrl }, false)}
+            <div class="form-row"><div class="form-group"><label class="form-label">Built-in Icon</label><select class="form-select ad-icon" onchange="updateAdIconPreview(this)">${adIconOptions(ad.icon || 'spark')}</select></div><div class="form-group"><label class="form-label">Accent Color</label><input type="color" class="form-input ad-color-input ad-color" value="${/^#[0-9a-f]{6}$/i.test(ad.color || '') ? ad.color : '#00f2fe'}"></div></div>
+            <div class="form-group"><label class="form-label">Custom Icon Image URL (Overrides Built-in Icon)</label><input type="url" class="form-input ad-icon-url" value="${escapeHtml(ad.iconUrl || '')}" placeholder="https://example.com/icon.png" onchange="updateAdIconPreview(this)"></div>
+            <label class="form-label">Show This Ad On</label><div class="ad-placement-grid">${pages.map(page => `<label class="ad-check"><input type="checkbox" class="ad-placement" value="${page[0]}" ${placements.includes(page[0]) ? 'checked' : ''}> ${page[1]}</label>`).join('')}</div>
+          </div>
+        </details>`;
+    }
+
+    function rewardedEditorHtml(video) {
+      const ad = { videoSourceType:video.rewardAdSourceType || 'url', videoUrl:video.rewardAdVideo || '' };
+      const sourceLabel = ad.videoSourceType === 'file' || ad.videoUrl.startsWith('indexeddb://') ? 'Uploaded commercial' : 'URL commercial';
+      return `
+        <details class="ad-editor rewarded-ad-editor" data-video-id="${video.id}">
+          <summary class="ad-editor-summary"><span class="ad-summary-icon"><span class="sl-ic">${SLIcon('play')}</span></span><span class="ad-summary-copy"><strong>${escapeHtml(video.title)}</strong><small>${escapeHtml(video.rewardTitle || 'No sponsor headline')}</small></span><span class="ad-summary-meta">${sourceLabel} · ${video.rewardAdDuration || 10}s</span><span class="ad-summary-status">Synced</span><span class="ad-summary-chevron">▾</span></summary>
+          <div class="ad-editor-body">
+            <div class="ad-editor-head"><div class="ad-editor-title">Rewarded Ad</div><label class="ad-toggle"><input type="checkbox" class="reward-loop" ${video.rewardAdLoop !== false ? 'checked' : ''}> Loop commercial</label></div>
+            <div class="form-row"><div class="form-group"><label class="form-label">Sponsor Headline</label><input type="text" class="form-input reward-title" value="${escapeHtml(video.rewardTitle || '')}"></div><div class="form-group"><label class="form-label">Countdown Seconds</label><input type="number" class="form-input reward-duration" min="3" max="60" value="${video.rewardAdDuration || 10}"></div></div>
+            <div class="form-group"><label class="form-label">Sponsor Promo Text</label><input type="text" class="form-input reward-desc" value="${escapeHtml(video.rewardContent || '')}"></div>
+            <div class="form-group"><label class="form-label">Check Offer Link</label><input type="url" class="form-input reward-link" value="${escapeHtml(video.rewardAdLink || 'https://google.com')}"></div>
+            ${adSourceHtml(ad, true)}
+          </div>
+        </details>`;
+    }
+
+    function updateAdIconPreview(input) {
+      const editor = input.closest('.ad-editor');
+      const host = editor.querySelector('.ad-summary-icon');
+      host.innerHTML = slAdIconHtml({ icon:editor.querySelector('.ad-icon').value, iconUrl:editor.querySelector('.ad-icon-url').value.trim() });
+      slHydrate(host);
+    }
+
+    function showAdManagerSection(section) {
+      const banners = section === 'banners';
+      document.getElementById('banner-ads-section').style.display = banners ? '' : 'none';
+      document.getElementById('rewarded-ads-section').style.display = banners ? 'none' : '';
+      document.getElementById('ad-tab-banners').classList.toggle('active',banners);
+      document.getElementById('ad-tab-rewarded').classList.toggle('active',!banners);
+    }
+
+    function toggleAllAdEditors(open) {
+      const visible = document.getElementById('banner-ads-section').style.display !== 'none' ? document.getElementById('banner-ads-section') : document.getElementById('rewarded-ads-section');
+      visible.querySelectorAll('details.ad-editor').forEach(editor => editor.open = open);
+    }
+
+    function populateBannersForm() {
+      const banners = appData.settings.ads || [];
+      const bannerList = document.getElementById('banner-ads-list');
+      bannerList.innerHTML = banners.length ? banners.map(bannerEditorHtml).join('') : '<div class="ad-empty">No banner ads yet. Select “Add Banner Ad” to create one.</div>';
+      document.getElementById('banner-ad-count').innerText = banners.length + (banners.length === 1 ? ' ad' : ' ads');
+
+      const videos = appData.links || [];
+      const rewardedList = document.getElementById('rewarded-ads-list');
+      rewardedList.innerHTML = videos.length ? videos.map(rewardedEditorHtml).join('') : '<div class="ad-empty">Upload a video first, then its rewarded ad will appear here.</div>';
+      document.getElementById('rewarded-ad-count').innerText = videos.length + (videos.length === 1 ? ' video' : ' videos');
+      slHydrate(bannerList); slHydrate(rewardedList);
+    }
+
+    function toggleAdSource(select) {
+      const editor = select.closest('.ad-editor');
+      const isFile = select.value === 'file';
+      editor.querySelector('.ad-url-wrap').style.display = isFile ? 'none' : 'block';
+      editor.querySelector('.ad-file-wrap').style.display = isFile ? 'block' : 'none';
+    }
+
+    function addBannerAd() {
+      showAdManagerSection('banners');
+      const list = document.getElementById('banner-ads-list');
+      if (list.querySelector('.ad-empty')) list.innerHTML = '';
+      list.insertAdjacentHTML('beforeend', bannerEditorHtml({
+        id: 'ad-' + Math.random().toString(36).slice(2, 10),
+        name: 'New Banner Ad', title: 'New Sponsor Offer', subtitle: '',
+        linkUrl: 'https://google.com', buttonText: 'Learn More',
+        videoUrl: '', videoSourceType: 'url', placements: ['watch'],
+        enabled: true, loop: true, color: '#00f2fe'
+      }));
+      list.lastElementChild.open = true;
+      slHydrate(list.lastElementChild);
+      list.lastElementChild.scrollIntoView({ behavior:'smooth', block:'center' });
+    }
+
+    async function deleteBannerAd(button) {
+      if (!await slConfirm('Delete this banner ad and save the change?','Delete Banner Ad')) return;
+      button.closest('.banner-ad-editor').remove();
+      await saveBannersConfig();
+    }
+
+    async function saveAdEditorVideo(editor, existing, storageId) {
+      const mode = editor.querySelector('.ad-source-select').value;
+      const file = editor.querySelector('.ad-video-file').files[0];
+      if (mode === 'file') {
+        if (file) await saveVideoFileToDB(storageId, file);
+        const existingIsFile = existing && (existing.videoSourceType === 'file' || (existing.videoUrl || '').startsWith('indexeddb://'));
+        if (!file && !existingIsFile) throw new Error('Choose a video file or switch to Direct video URL.');
+        return { videoSourceType:'file', videoUrl:'indexeddb://' + storageId };
+      }
+      return { videoSourceType:'url', videoUrl:editor.querySelector('.ad-video-url').value.trim() };
+    }
+
+    async function saveBannersConfig() {
+      const btn = document.getElementById('btn-save-ads');
+      btn.disabled = true;
+      btn.innerText = 'Saving Ads...';
+      try {
+        const nextAds = [];
+        for (const editor of document.querySelectorAll('.banner-ad-editor')) {
+          const id = editor.dataset.adId;
+          const existing = (appData.settings.ads || []).find(ad => ad.id === id) || {};
+          const media = await saveAdEditorVideo(editor, existing, 'ad-' + id);
+          nextAds.push({
+            ...existing, id, kind:'banner',
+            name:editor.querySelector('.ad-name').value.trim() || 'Banner Ad',
+            title:editor.querySelector('.ad-title').value.trim(),
+            subtitle:editor.querySelector('.ad-subtitle').value.trim(),
+            linkUrl:editor.querySelector('.ad-link').value.trim(),
+            buttonText:editor.querySelector('.ad-button').value.trim() || 'Learn More',
+            color:editor.querySelector('.ad-color').value,
+            icon:editor.querySelector('.ad-icon').value,
+            iconUrl:editor.querySelector('.ad-icon-url').value.trim(),
+            enabled:editor.querySelector('.ad-enabled').checked,
+            loop:editor.querySelector('.ad-loop').checked,
+            placements:Array.from(editor.querySelectorAll('.ad-placement:checked')).map(input => input.value),
+            ...media
+          });
+        }
+
+        for (const editor of document.querySelectorAll('.rewarded-ad-editor')) {
+          const videoId = editor.dataset.videoId;
+          const video = appData.links.find(item => item.id === videoId);
+          if (!video) continue;
+          const existing = { videoSourceType:video.rewardAdSourceType, videoUrl:video.rewardAdVideo };
+          const media = await saveAdEditorVideo(editor, existing, 'rewarded-' + videoId);
+          Object.assign(video, {
+            rewardTitle:editor.querySelector('.reward-title').value.trim(),
+            rewardContent:editor.querySelector('.reward-desc').value.trim(),
+            rewardAdLink:editor.querySelector('.reward-link').value.trim(),
+            rewardAdDuration:parseInt(editor.querySelector('.reward-duration').value) || 10,
+            rewardAdLoop:editor.querySelector('.reward-loop').checked,
+            rewardAdVideo:media.videoUrl,
+            rewardAdSourceType:media.videoSourceType
+          });
+        }
+
+        appData.settings.ads = nextAds;
+        saveLocalData(appData);
+        showToast('All ads and page placements saved!');
+        populateBannersForm();
+        renderVideos();
+      } catch (error) {
+        slAlert('Ad could not be saved: ' + error.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Save All Ads & Placements';
+      }
+    }
+
+    function startEditVideo(id) {
+      const v = appData.links.find(item => item.id === id);
+      if (!v) return;
+
+      showPane('upload');
+      document.getElementById('form-heading').innerText = "Modify Video: " + v.title;
+      document.getElementById('edit-id').value = v.id;
+      document.getElementById('inp-title').value = v.title;
+      document.getElementById('inp-desc').value = v.description || '';
+      document.getElementById('inp-url').value = v.videoUrl || '';
+      const thumbIsFile = (v.thumbnail || '').startsWith('indexeddb://');
+      document.getElementById('inp-thumb').value = thumbIsFile ? '' : (v.thumbnail || '');
+      document.getElementById('inp-thumb-source').value = thumbIsFile ? 'file' : 'url';
+      document.getElementById('inp-thumb-source').querySelectorAll('option').forEach(option => option.selected = option.value === (thumbIsFile ? 'file' : 'url'));
+      setThumbSourceMode(thumbIsFile ? 'file' : 'url');
+      document.getElementById('thumb-current-file').style.display = thumbIsFile ? '' : 'none';
+      previewVideoThumbnail(v);
+      document.getElementById('inp-duration').value = v.rewardAdDuration || 10;
+      document.getElementById('inp-reward-title').value = v.rewardTitle || '';
+      document.getElementById('inp-reward-desc').value = v.rewardContent || '';
+      document.getElementById('inp-reward-link').value = v.rewardAdLink || 'https://google.com';
+      document.getElementById('inp-reward-video').value = (v.rewardAdSourceType === 'file' || (v.rewardAdVideo || '').startsWith('indexeddb://')) ? '' : (v.rewardAdVideo || '');
+      const rewardIsFile = v.rewardAdSourceType === 'file' || (v.rewardAdVideo || '').startsWith('indexeddb://');
+      document.getElementById('inp-reward-source').value = rewardIsFile ? 'file' : 'url';
+      document.getElementById('inp-reward-source').querySelectorAll('option').forEach(option => option.selected = option.value === (rewardIsFile ? 'file' : 'url'));
+      setRewardSourceMode(rewardIsFile ? 'file' : 'url');
+      document.getElementById('reward-current-file').style.display = rewardIsFile ? '' : 'none';
+      ['hd','1080','720','480','360'].forEach(key => {
+        const saved = (v.qualitySources || []).find(q => q.id === key || (key === 'hd' && q.label === 'HD') || String(q.height) === (key === 'hd' ? '2160' : key));
+        const genuine = saved && (saved.sourceType === 'file' || (saved.url || '').startsWith('indexeddb://'));
+        document.getElementById('quality-' + key + '-current').style.display = genuine ? '' : 'none';
+      });
+      document.getElementById('select-featured').value = v.featuredNextVideoId || '';
+      previewRewardAdInEditor(v);
+
+      if (v.videoSourceType === 'file') setSourceMode('file');
+      else setSourceMode('url');
+
+      document.getElementById('btn-submit').innerText = "Update Video";
+      document.getElementById('btn-cancel-edit').style.display = 'inline-block';
+    }
+
+    function cancelEdit() {
+      document.getElementById('video-upload-form').reset();
+      document.getElementById('edit-id').value = '';
+      document.getElementById('form-heading').innerText = "Monetize New Video";
+      document.getElementById('btn-submit').innerText = "Save & Post Monetized Link";
+      document.getElementById('btn-cancel-edit').style.display = 'none';
+      document.getElementById('reward-edit-preview').style.display = 'none';
+      document.getElementById('reward-edit-preview').innerHTML = '';
+      document.getElementById('reward-current-file').style.display = 'none';
+      document.getElementById('thumb-current-file').style.display = 'none';
+      ['hd','1080','720','480','360'].forEach(key => document.getElementById('quality-' + key + '-current').style.display = 'none');
+      document.getElementById('thumb-edit-preview').style.display = 'none';
+      setThumbSourceMode('url');
+      setRewardSourceMode('url');
+      showPane('videos');
+    }
+
+    async function handleVideoSubmit(e) {
+      e.preventDefault();
+      const editId = document.getElementById('edit-id').value;
+      const fileInput = document.getElementById('inp-file');
+      const hasFile = fileInput.files && fileInput.files[0];
+      const btn = document.getElementById('btn-submit');
+      btn.disabled = true;
+
+      let newId = editId || ('v-' + Math.random().toString(36).substring(2, 9));
+      let videoSourceType = currentSourceMode;
+      let finalVideoUrl = '';
+
+      if (currentSourceMode === 'file' && hasFile) {
+        const file = fileInput.files[0];
+        await saveVideoFileToDB(newId, file);
+        videoSourceType = 'file';
+        finalVideoUrl = 'indexeddb://' + newId;
+      } else {
+        videoSourceType = 'url';
+        finalVideoUrl = optimizeVideoSource(document.getElementById('inp-url').value);
+      }
+
+      const existingVideo = editId ? appData.links.find(l => l.id === editId) : null;
+      const thumbMode = document.getElementById('inp-thumb-source').value;
+      const thumbFile = document.getElementById('inp-thumb-file').files[0];
+      const existingThumbIsFile = existingVideo && (existingVideo.thumbnail || '').startsWith('indexeddb://');
+      if (thumbMode === 'file' && !thumbFile && !existingThumbIsFile) { slAlert('Choose a thumbnail image or switch to Image URL.'); btn.disabled = false; return; }
+      if (thumbFile) await saveVideoFileToDB('thumb-' + newId,thumbFile);
+      const fallbackThumb = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80';
+      const finalThumbnail = thumbMode === 'file' ? 'indexeddb://thumb-' + newId : (document.getElementById('inp-thumb').value.trim() || (existingVideo && !existingThumbIsFile ? existingVideo.thumbnail : '') || fallbackThumb);
+      const rewardMode = document.getElementById('inp-reward-source').value;
+      const rewardFile = document.getElementById('inp-reward-file').files[0];
+      const existingRewardIsFile = existingVideo && (existingVideo.rewardAdSourceType === 'file' || (existingVideo.rewardAdVideo || '').startsWith('indexeddb://'));
+      if (rewardMode === 'file' && !rewardFile && !existingRewardIsFile) {
+        slAlert('Choose a commercial video file or switch to URL.'); btn.disabled = false; return;
+      }
+      if (rewardFile) await saveVideoFileToDB('rewarded-' + newId,rewardFile);
+      const rewardMedia = rewardMode === 'file'
+        ? { rewardAdSourceType:'file', rewardAdVideo:'indexeddb://rewarded-' + newId }
+        : { rewardAdSourceType:'url', rewardAdVideo:document.getElementById('inp-reward-video').value.trim() };
+      const qualitySources = [];
+      for (const key of ['hd','1080','720','480','360']) {
+        const qualityFile = document.getElementById('inp-quality-' + key).files[0];
+        const fileId = 'quality-' + key + '-' + newId;
+        if (qualityFile) await saveVideoFileToDB(fileId,qualityFile);
+        const previous = existingVideo && (existingVideo.qualitySources || []).find(q =>
+          q.id === key || (key === 'hd' && q.label === 'HD') || String(q.height) === (key === 'hd' ? '2160' : key)
+        );
+        if (qualityFile) qualitySources.push({ id:key,label:key === 'hd' ? 'HD' : key + 'p',height:key === 'hd' ? 2160 : parseInt(key),url:'indexeddb://' + fileId,sourceType:'file',fileId });
+        else if (previous && (previous.sourceType === 'file' || (previous.url || '').startsWith('indexeddb://'))) qualitySources.push(previous);
+      }
+
+      if (editId) {
+        const idx = appData.links.findIndex(l => l.id === editId);
+        if (idx !== -1) {
+          appData.links[idx] = {
+            ...appData.links[idx],
+            title: document.getElementById('inp-title').value,
+            description: document.getElementById('inp-desc').value,
+            videoSourceType: hasFile ? 'file' : appData.links[idx].videoSourceType,
+            videoUrl: finalVideoUrl || appData.links[idx].videoUrl,
+            thumbnail: finalThumbnail,
+            rewardAdDuration: parseInt(document.getElementById('inp-duration').value) || 10,
+            rewardTitle: document.getElementById('inp-reward-title').value,
+            rewardContent: document.getElementById('inp-reward-desc').value,
+            rewardAdLink: document.getElementById('inp-reward-link').value,
+            rewardAdVideo: rewardMedia.rewardAdVideo,
+            rewardAdSourceType: rewardMedia.rewardAdSourceType,
+            qualitySources,
+            featuredNextVideoId: document.getElementById('select-featured').value
+          };
+          saveLocalData(appData);
+          showToast('Video updated!');
+          cancelEdit();
+          btn.disabled = false;
+          init();
+        }
+        return;
+      }
+
+      const newVideo = {
+        id: newId,
+        title: document.getElementById('inp-title').value,
+        description: document.getElementById('inp-desc').value,
+        videoSourceType,
+        videoUrl: finalVideoUrl,
+        thumbnail: finalThumbnail,
+        rewardAdDuration: parseInt(document.getElementById('inp-duration').value) || 10,
+        rewardTitle: document.getElementById('inp-reward-title').value,
+        rewardContent: document.getElementById('inp-reward-desc').value,
+        rewardAdLink: document.getElementById('inp-reward-link').value,
+        rewardAdVideo: rewardMedia.rewardAdVideo,
+        rewardAdSourceType: rewardMedia.rewardAdSourceType,
+        rewardAdLoop: true,
+        qualitySources,
+        featuredNextVideoId: document.getElementById('select-featured').value,
+        views: 0
+      };
+
+      appData.links.unshift(newVideo);
+      saveLocalData(appData);
+      showToast('Video published!');
+      document.getElementById('video-upload-form').reset();
+      setRewardSourceMode('url');
+      document.getElementById('reward-edit-preview').style.display = 'none';
+      document.getElementById('reward-edit-preview').innerHTML = '';
+      document.getElementById('reward-current-file').style.display = 'none';
+      btn.disabled = false;
+      showPane('videos');
+      init();
+    }
+
+    async function deleteVideo(id) {
+      if (!await slConfirm('Are you sure you want to delete this video?','Delete Video')) return;
+      appData.links = appData.links.filter(l => l.id !== id);
+      saveLocalData(appData);
+      showToast('Video deleted');
+      init();
+    }
+
+
+
+    function copyUrl(url) {
+      navigator.clipboard.writeText(url).then(() => {
+        showToast('Link copied: ' + url);
+      });
+    }
+
+    function showToast(text) {
+      const t = document.getElementById('toast');
+      t.innerText = text;
+      t.style.display = 'block';
+      setTimeout(() => { t.style.display = 'none'; }, 2500);
+    }
+
+    function logoutAdmin() {
+      clearSession();
+      window.location.href = 'login.html';
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Watch & Unlock Video | StreamLock</title>
+  <link rel="stylesheet" href="theme.css">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: #070a14;
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Ambient Background Glow */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -20%;
+      left: 20%;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(0, 242, 254, 0.08) 0%, transparent 70%);
+      z-index: 0;
+      pointer-events: none;
+      animation: pulseGlow 8s ease-in-out infinite alternate;
+    }
+    @keyframes pulseGlow {
+      0% { transform: scale(1) translateY(0); opacity: 0.6; }
+      100% { transform: scale(1.2) translateY(40px); opacity: 1; }
+    }
+
+    /* Main Container */
+    .main-wrap {
+      max-width: 1080px;
+      width: 100%;
+      margin: 18px auto;
+      padding: 0 16px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+      flex-grow: 1;
+      position: relative;
+      z-index: 10;
+    }
+    @media (max-width: 900px) {
+      .main-wrap { grid-template-columns: 1fr; }
+    }
+
+    /* Video Player Screen */
+    .player-container {
+      background: #000;
+      border-radius: 14px;
+      overflow: hidden;
+      aspect-ratio: 16 / 9;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    video, iframe {
+      width: 100%;
+      height: 100%;
+      display: none;
+      border: none;
+      background: #000;
+      object-fit: contain;
+    }
+    .playing { display: block !important; }
+
+    /* The Locked Placeholder (Informs user to scroll below) */
+    .locked-poster-placeholder {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-size: cover;
+      background-position: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+    }
+    .locked-poster-placeholder::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(8, 12, 22, 0.88);
+      z-index: 1;
+    }
+    .locked-msg-box {
+      position: relative;
+      z-index: 2;
+      max-width: 480px;
+    }
+
+    /* ==============================================================
+       3. SCROLL-BELOW UNLOCK SECTION
+       The unlock button is intentionally positioned below the player
+       and intermediate ads so the user scrolls past everything
+    ============================================================== */
+    .scroll-down-unlock-section {
+      margin-top: 20px;
+      background: linear-gradient(180deg, #0f1626 0%, #131b2e 100%);
+      border: 2px dashed rgba(0, 242, 254, 0.4);
+      border-radius: 14px;
+      padding: 28px 20px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .btn-unlock-big {
+      background: linear-gradient(135deg, #00f2fe 0%, #007dfe 100%);
+      color: #fff;
+      font-size: 1.2rem;
+      font-weight: 900;
+      padding: 18px 42px;
+      border-radius: 50px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 0 35px rgba(0, 242, 254, 0.6);
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      margin-top: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      animation: pulseBtn 2s infinite;
+    }
+    @keyframes pulseBtn {
+      0% { box-shadow: 0 0 0 0 rgba(0, 242, 254, 0.7); }
+      70% { box-shadow: 0 0 0 18px rgba(0, 242, 254, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(0, 242, 254, 0); }
+    }
+    .btn-unlock-big:hover { transform: scale(1.05); }
+
+    /* Video Details Card */
+    .video-details-card {
+      margin-top: 16px;
+      background: #0f1626;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 18px;
+    }
+    .video-title { font-size: 1.3rem; font-weight: 800; margin-bottom: 8px; }
+    .video-desc { font-size: 0.9rem; color: #94a3b8; line-height: 1.5; }
+
+    /* Featured Next Video */
+    .featured-next-box {
+      margin-top: 16px;
+      background: linear-gradient(135deg, rgba(0, 125, 254, 0.15) 0%, rgba(0, 242, 254, 0.1) 100%);
+      border: 1px solid rgba(0, 242, 254, 0.4);
+      border-radius: 12px;
+      padding: 16px;
+      display: none;
+    }
+    .featured-badge {
+      font-size: 0.7rem;
+      background: #00f2fe;
+      color: #000;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 800;
+      text-transform: uppercase;
+      display: inline-block;
+      margin-bottom: 8px;
+    }
+
+    /* Next Videos Carousel / Grid */
+    .next-videos-section {
+      margin-top: 16px;
+      background: #0f1626;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 18px;
+    }
+    .next-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .next-card {
+      background: #141e33;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: #fff;
+      transition: all 0.25s ease;
+    }
+    .next-card:hover {
+      transform: translateY(-3px);
+      border-color: #00f2fe;
+      background: #1b2947;
+    }
+    .next-thumb {
+      width: 70px;
+      height: 48px;
+      border-radius: 6px;
+      object-fit: cover;
+      background: #000;
+    }
+    .next-name {
+      font-size: 0.82rem;
+      font-weight: 700;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* ==============================================================
+       5. FULL-SCREEN IMMERSIVE REWARDED AD VIEW
+       - Upper Right Corner: Countdown Timer
+       - Center: Video Commercial Ad
+       - Bottom: Prominent "CHECK OFFER" Button (skips timer & unlocks)
+    ============================================================== */
+    .fullscreen-ad-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: #030611;
+      z-index: 999999;
+      display: none;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px;
+    }
+    .fullscreen-ad-overlay.open { display: flex; }
+    body.sl-ad-playing{overflow:hidden}
+    .ad-top-bar {
+      width: 100%;
+      max-width: 1100px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+    }
+    .ad-sponsor-label {
+      background: rgba(245, 158, 11, 0.2);
+      border: 1px solid #f59e0b;
+      color: #f59e0b;
+      font-size: 0.8rem;
+      font-weight: 800;
+      padding: 6px 14px;
+      border-radius: 30px;
+      text-transform: uppercase;
+    }
+    .ad-corner-timer {
+      background: rgba(0, 0, 0, 0.8);
+      border: 2px solid #00f2fe;
+      color: #00f2fe;
+      padding: 8px 18px;
+      border-radius: 30px;
+      font-family: monospace;
+      font-size: 1.15rem;
+      font-weight: 900;
+      box-shadow: 0 0 20px rgba(0, 242, 254, 0.5);
+    }
+    .ad-center-stage {
+      width: 100%;
+      max-width: 900px;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 16px 0;
+    }
+    .ad-video-player {
+      width: 100%;
+      max-height: 52vh;
+      border-radius: 16px;
+      object-fit: cover;
+      border: 1px solid rgba(0, 242, 254, 0.3);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+      background: #000;
+    }
+    .ad-headline {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: #fff;
+      margin: 12px 0 4px;
+      text-align: center;
+    }
+    .ad-desc-text {
+      color: #cbd5e1;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+    .ad-bottom-bar {
+      width: 100%;
+      max-width: 700px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      z-index: 10;
+    }
+    .btn-check-offer {
+      width: 100%;
+      background: linear-gradient(135deg, #00f2fe 0%, #007dfe 100%);
+      color: #051322;
+      font-size: 1.25rem;
+      font-weight: 900;
+      padding: 16px 28px;
+      border-radius: 50px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      box-shadow: 0 8px 30px rgba(0, 242, 254, 0.5);
+      transition: all 0.25s ease;
+      text-decoration: none;
+    }
+    .btn-check-offer:hover {
+      transform: scale(1.03);
+      box-shadow: 0 12px 40px rgba(0, 242, 254, 0.8);
+    }
+    .offer-reward-note {
+      font-size: 0.8rem;
+      color: #38bdf8;
+      font-weight: 600;
+    }
+
+    /* StreamLock custom player — arranged, animated overlays above every source. */
+    .player-tools{position:absolute;z-index:12;top:0;left:0;right:0;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:12px 12px 38px;background:linear-gradient(180deg,rgba(1,4,11,.96),rgba(1,4,11,.64) 55%,transparent);pointer-events:none;transition:opacity .28s ease,transform .28s ease,visibility .28s}
+    .player-brand-chip,.player-tool-actions{display:flex;align-items:center;gap:7px;pointer-events:auto}
+    .player-brand-chip{padding:7px 10px;border:1px solid rgba(0,242,254,.25);border-radius:8px;background:rgba(8,17,30,.82);color:#d9fbff;font-size:.63rem;font-weight:850;letter-spacing:.1em;text-transform:uppercase}.player-brand-chip .sl-ic{width:14px;height:14px;margin:0;color:#00f2fe}
+    .quality-picker{display:flex;align-items:center;gap:5px;padding:4px 5px 4px 8px;border:1px solid rgba(0,242,254,.25);border-radius:8px;background:rgba(8,17,30,.88);color:#9eb4ce;font-size:.62rem}.quality-picker select{max-width:130px;border:0;outline:0;background:#101d30;color:#fff;border-radius:5px;padding:5px 6px;font-size:.67rem;cursor:pointer}
+    .player-icon-btn{width:31px;height:31px;flex:0 0 31px;display:inline-grid;place-items:center;border:1px solid rgba(255,255,255,.14);border-radius:7px;background:rgba(12,23,39,.9);color:#eefcff;cursor:pointer;transition:color .18s,border-color .18s,background .18s}.player-icon-btn:hover{border-color:#00f2fe;color:#00f2fe;background:rgba(0,242,254,.09)}.player-icon-btn .sl-ic{width:15px;height:15px;margin:0}
+    .player-source-shade{display:none;position:absolute;z-index:5;left:0;right:0;height:58px;pointer-events:none}.source-frame .player-source-shade{display:block}.player-source-shade.top{top:0;background:linear-gradient(#01040bf5,rgba(1,4,11,.7),transparent)}.player-source-shade.bottom{bottom:0;height:48px;background:linear-gradient(transparent,rgba(1,4,11,.78),#01040bf5)}
+    .player-click-shield{position:absolute;z-index:4;inset:0;cursor:pointer;background:transparent}.player-container:not(.is-unlocked) .player-click-shield,.player-container:not(.is-unlocked) .player-center-play{display:none}.player-container.source-frame #player-iframe{pointer-events:none}
+    .player-center-play{position:absolute;z-index:9;left:50%;top:50%;transform:translate(-50%,-50%);width:58px;height:58px;display:grid;place-items:center;border-radius:50%;border:1px solid rgba(0,242,254,.65);background:rgba(4,12,24,.82);color:#00f2fe;box-shadow:0 10px 34px rgba(0,0,0,.45),0 0 24px rgba(0,242,254,.13);cursor:pointer;transition:opacity .25s,transform .25s,visibility .25s}.player-center-play:hover{transform:translate(-50%,-50%) scale(1.06);background:#00f2fe;color:#051322}.player-center-play .sl-ic{width:26px;height:26px;margin:0}.is-playing .player-center-play{opacity:0;visibility:hidden;pointer-events:none}
+    .player-control-bar{position:absolute;z-index:11;left:0;right:0;bottom:0;display:block;padding:34px 12px 11px;background:linear-gradient(0deg,rgba(1,4,11,.97),rgba(1,4,11,.78) 65%,transparent);transition:opacity .28s ease,transform .28s ease,visibility .28s}
+    .player-timeline-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}.player-timeline{flex:1;min-width:40px;height:4px;accent-color:#00f2fe;cursor:pointer}.player-timeline:disabled{cursor:default;opacity:.45}.player-time{font:600 .61rem/1.2 ui-monospace,SFMono-Regular,Consolas,monospace;color:#c2d3e7;white-space:nowrap;min-width:31px}.player-time:last-child{text-align:right}
+    .player-buttons-row{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:36px;padding:4px 6px;border:1px solid rgba(255,255,255,.09);border-radius:9px;background:rgba(8,17,30,.84);backdrop-filter:blur(12px)}.player-button-group{display:flex;align-items:center;gap:5px;min-width:0}.player-control-bar .player-icon-btn{width:28px;height:28px;flex-basis:28px;border:0;background:transparent}.player-control-bar .player-icon-btn:hover{background:rgba(0,242,254,.09)}
+    .player-volume{width:76px;height:4px;accent-color:#00f2fe;cursor:pointer}.player-rate{border:1px solid rgba(255,255,255,.1);border-radius:6px;background:#101d30;color:#d8e6f6;padding:5px 4px;font-size:.63rem;outline:0;cursor:pointer}.player-source-state{display:none;color:#8ea7c5;font-size:.62rem;padding:0 6px}.no-timeline .player-timeline-row{display:none}.no-timeline .player-source-state{display:block}
+    .is-unlocked .player-tools,.is-unlocked .player-control-bar{opacity:0;visibility:hidden;pointer-events:none}.is-unlocked .player-tools{transform:translateY(-8px)}.is-unlocked .player-control-bar{transform:translateY(8px)}.is-unlocked.controls-visible .player-tools,.is-unlocked.controls-visible .player-control-bar{opacity:1;visibility:visible;transform:translateY(0)}.is-unlocked.controls-visible .player-tool-actions,.is-unlocked.controls-visible .player-brand-chip,.is-unlocked.controls-visible .player-control-bar{pointer-events:auto}.is-unlocked:not(.controls-visible){cursor:none}.has-next-hint .player-control-bar{padding-bottom:43px}
+    .player-container.is-portrait{height:min(72vh,720px);width:auto;max-width:100%;aspect-ratio:var(--video-ratio,9/16);margin-inline:auto}.player-container:fullscreen,.player-container:-webkit-full-screen{width:100vw;height:100vh;max-height:none;aspect-ratio:auto;margin:0;border:0;border-radius:0;background:#000}.player-container:fullscreen video,.player-container:fullscreen iframe,.player-container:-webkit-full-screen video,.player-container:-webkit-full-screen iframe{width:100%;height:100%;object-fit:contain}#player-video:fullscreen{width:100vw;height:100vh;object-fit:contain;background:#000}
+    .ad-commercial-media{position:relative;width:100%;height:min(56vh,540px);display:flex;align-items:center;justify-content:center;background:#000;border-radius:14px;overflow:hidden;cursor:pointer}.ad-commercial-media .ad-video-player{position:relative;z-index:1;display:block!important;width:100%;height:100%;max-height:none;object-fit:contain;border:0;border-radius:0;pointer-events:none}.ad-commercial-media iframe{pointer-events:none}.ad-commercial-media:before,.ad-commercial-media:after{content:'';position:absolute;z-index:2;left:0;right:0;height:54px;pointer-events:none}.ad-commercial-media:before{top:0;background:linear-gradient(#02050c,rgba(2,5,12,.72),transparent)}.ad-commercial-media:after{bottom:0;background:linear-gradient(transparent,rgba(2,5,12,.75),#02050c)}
+    .fullscreen-ad-overlay{height:100dvh;padding:clamp(12px,2.5vw,24px);background:radial-gradient(circle at 50% 35%,#101b30,#030611 70%);transform:none!important}.fullscreen-ad-overlay:fullscreen{width:100vw;height:100dvh;transform:none!important}.ad-center-stage{min-height:0}.ad-headline{font-size:clamp(.95rem,2.2vw,1.25rem);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.ad-desc-text{font-size:clamp(.72rem,1.5vw,.84rem)}.btn-check-offer{max-width:650px;font-size:clamp(.82rem,2vw,1rem);padding:13px 20px;border-radius:14px}.ad-sponsor-label{font-size:.68rem}.ad-corner-timer{font-size:.95rem;padding:7px 14px}
+    .next-video-hint{position:absolute;z-index:13;left:50%;bottom:5px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;gap:6px;width:max-content;max-width:calc(100% - 24px);padding:6px 12px;border:1px solid rgba(0,242,254,.38);border-radius:999px;background:rgba(5,15,28,.94);color:#c8fcff;box-shadow:0 5px 18px rgba(0,0,0,.35);backdrop-filter:blur(8px);font-size:.66rem;cursor:pointer;animation:nextHintIn .25s ease}.next-video-hint:hover{background:#00f2fe;color:#051322}.next-video-hint .sl-ic{width:13px;height:13px;margin:0;animation:slNudge 1.9s ease-in-out infinite}.player-container:fullscreen .next-video-hint,.player-container:-webkit-full-screen .next-video-hint{display:none!important}@keyframes nextHintIn{from{opacity:0;bottom:0}to{opacity:1;bottom:5px}}
+    @media(max-width:560px){.player-tools{padding:7px 7px 30px}.player-brand-chip{font-size:0;padding:6px;border:0}.player-brand-chip .sl-ic{width:16px;height:16px}.quality-picker>span{display:none}.quality-picker select{max-width:105px}.player-control-bar{padding:28px 7px 7px}.has-next-hint .player-control-bar{padding-bottom:40px}.player-buttons-row{padding:3px 4px;gap:4px}.player-volume{width:54px}.player-rate{font-size:.58rem}.player-container.is-portrait{height:68vh}.next-video-hint{bottom:4px;padding:5px 9px;font-size:.59rem}.ad-commercial-media{height:min(52vh,480px)}.btn-check-offer{font-size:.78rem;padding:12px 14px}}
+  </style>
+</head>
+<body>
+
+  <!-- Main Container -->
+  <main class="main-wrap">
+    <div>
+      <!-- Video Player Container (Starts locked) -->
+      <div class="player-container" id="player-box">
+        <div class="locked-poster-placeholder" id="locked-poster">
+          <div class="locked-msg-box">
+            <div class="sl-lock-eyebrow"><span class="sl-ic" data-icon="play"></span> StreamLock Player</div>
+            <h2 style="font-size:1.7rem; font-weight:900; color:#fff; margin-bottom:18px;" id="lock-heading">Video Locked</h2>
+            <button class="sl-scroll-cta" onclick="scrollToUnlockSection()">
+              <span class="sl-ic" data-icon="arrowDown"></span>
+              <span>Scroll Down to the Video Link</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Every source is presented inside the same StreamLock player chrome. -->
+        <video id="player-video" playsinline preload="auto"></video>
+        <iframe id="player-iframe" allow="autoplay; encrypted-media; picture-in-picture"></iframe>
+        <div class="player-source-shade top"></div><div class="player-source-shade bottom"></div>
+        <button type="button" class="player-click-shield" id="player-click-shield" onclick="wakePlayerControls()" aria-label="Show video controls"></button>
+        <button type="button" class="player-center-play" id="player-center-play" onclick="toggleMainPlayback()" aria-label="Play video"><span class="sl-ic" data-icon="play"></span></button>
+        <div class="player-tools" id="player-tools" style="display:none;">
+          <div class="player-brand-chip"><span class="sl-ic" data-icon="film"></span> StreamLock Player</div>
+          <div class="player-tool-actions">
+            <label class="quality-picker" title="HD and 1080p require a reward before playback"><span>Quality</span><select id="quality-select" onchange="handleQualityChange(this)" aria-label="Video quality"></select></label>
+            <button type="button" class="player-icon-btn" onclick="openVideoFullscreen()" aria-label="Open fullscreen" title="Fullscreen"><span class="sl-ic" data-icon="expand"></span></button>
+          </div>
+        </div>
+        <div class="player-control-bar" id="player-control-bar" style="display:none;">
+          <div class="player-timeline-row"><span class="player-time" id="player-current-time">0:00</span><input type="range" class="player-timeline" id="player-timeline" min="0" max="100" value="0" step="0.1" aria-label="Seek video"><span class="player-time" id="player-duration">0:00</span></div>
+          <div class="player-buttons-row">
+            <div class="player-button-group">
+              <button type="button" class="player-icon-btn" id="player-play-toggle" onclick="toggleMainPlayback()" aria-label="Play or pause"><span class="sl-ic" data-icon="pause"></span></button>
+              <button type="button" class="player-icon-btn" id="player-mute-toggle" onclick="toggleMainMute()" aria-label="Mute or unmute"><span class="sl-ic" data-icon="volume"></span></button>
+              <input type="range" class="player-volume" id="player-volume" min="0" max="100" value="100" aria-label="Volume">
+            </div>
+            <span class="player-source-state">Source playback · timeline unavailable</span>
+            <div class="player-button-group"><label for="player-rate" class="player-time">Speed</label><select class="player-rate" id="player-rate" aria-label="Playback speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></div>
+          </div>
+        </div>
+        <button type="button" class="next-video-hint" id="next-video-hint" style="display:none;" onclick="scrollToNextVideo()">
+          <span class="sl-ic" data-icon="arrowDown"></span><span>Scroll down for the next video</span>
+        </button>
+      </div>
+
+      <!-- Three sponsor ads (replaces the old preview description + scattered ad blocks) -->
+      <section class="sl-ad-section">
+        <div class="sl-section-heading"><span class="sl-ic" data-icon="spark"></span><span>Sponsor Picks</span></div>
+        <p class="sl-section-sub">Three featured partner offers, hand-picked for viewers.</p>
+        <div class="sl-ad-trio" id="ad-trio" data-ad-placement="watch"></div>
+        <div class="sl-ad-disclosure">Sponsored content · supports free streaming</div>
+      </section>
+
+      <!-- ==============================================================
+           3. UNLOCK SECTION POSITIONED BELOW PLAYER & INTERMEDIATE ADS
+           (Users scroll past ads to reach this button)
+      ============================================================== -->
+      <div class="scroll-down-unlock-section" id="unlock-section">
+        <span style="background:rgba(0, 242, 254, 0.15); border:1px solid #00f2fe; color:#00f2fe; padding:4px 12px; border-radius:20px; font-weight:800; font-size:0.75rem; text-transform:uppercase;">
+          Video Link
+        </span>
+        <h2 style="font-size:1.6rem; font-weight:900; margin:10px 0 4px; color:#fff;">
+          Your Video Link Is Here
+        </h2>
+        <p style="color:#94a3b8; font-size:0.9rem; max-width:540px; margin:0 auto 16px;">
+          Watch a short sponsor commercial to unlock the player. Tap <strong>"Check Offer"</strong> to skip the wait instantly.
+        </p>
+
+        <button class="btn-unlock-big" onclick="startFullscreenAd()">
+          <span class="sl-ic" data-icon="unlock"></span><span>WATCH AD TO UNLOCK VIDEO</span>
+        </button>
+
+        <div style="margin-top:12px; font-size:0.8rem; color:#64748b;">
+          <span class="sl-ic" data-icon="clock"></span> Standard timer: <span id="lock-sec">10</span> seconds (or instant with Check Offer)
+        </div>
+      </div>
+
+      <!-- Featured Next Video -->
+      <div class="featured-next-box" id="featured-box">
+        <span class="featured-badge"><span class="sl-ic" data-icon="star"></span> Next Featured Video</span>
+        <a href="#" id="featured-link" style="display:flex; align-items:center; gap:12px; text-decoration:none; color:#fff; margin-top:6px;">
+          <img src="" id="featured-thumb" style="width:72px; height:48px; border-radius:6px; object-fit:cover;" alt="">
+          <div>
+            <div style="font-weight:800; font-size:0.95rem;" id="featured-title">Featured Title</div>
+            <div style="font-size:0.78rem; color:#00f2fe;">Watch Next Video ↗</div>
+          </div>
+        </a>
+      </div>
+
+      <!-- Next Videos Chained List -->
+      <div class="next-videos-section">
+        <h3 style="font-size:1rem; font-weight:700; color:#38bdf8;">More Videos to Watch</h3>
+        <div class="next-grid" id="next-videos-grid"></div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ==============================================================
+       5. FULL-SCREEN IMMERSIVE REWARDED AD OVERLAY
+       Upper-Corner Countdown + Center Video + Bottom Check Offer Button
+  ============================================================== -->
+  <div class="fullscreen-ad-overlay" id="fullscreen-ad" role="dialog" aria-modal="true" aria-label="Sponsored video advertisement">
+    <div class="ad-top-bar">
+      <div class="ad-sponsor-label"><span class="sl-ic" data-icon="star"></span> Sponsor Video Ad</div>
+      <div class="ad-corner-timer">
+        <span class="sl-ic" data-icon="clock"></span>
+        <span id="ad-timer-countdown">10</span>s
+      </div>
+    </div>
+
+    <div class="ad-center-stage">
+      <div id="ad-commercial-media" class="ad-commercial-media"></div>
+      <div style="text-align:center; margin-top:12px;">
+        <h2 class="ad-headline" id="ad-display-title">Claim Free Rewards & 50% Off Discount</h2>
+        <p class="ad-desc-text" id="ad-display-desc">Sponsored partner offer. Tap check offer to instantly finish your wait time!</p>
+      </div>
+    </div>
+
+    <div class="ad-bottom-bar">
+      <button class="btn-check-offer" onclick="handleCheckOfferClick()">
+        <span class="sl-ic" data-icon="rocket"></span><span>CHECK OFFER NOW (SKIP TIMER &amp; UNLOCK)</span><span class="sl-ic" data-icon="arrowUpRight"></span>
+      </button>
+      <div class="offer-reward-note">
+        <span class="sl-ic" data-icon="bolt"></span> Only “Check Offer” opens the sponsor and completes this reward. Tapping elsewhere opens the sponsor without a reward.
+      </div>
+    </div>
+  </div>
+
+  <script src="storage.js"></script>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    let linkId = urlParams.get('id');
+    if (!linkId) {
+      linkId = window.location.pathname.split('/').pop().replace('.html', '') || 'demo-v1';
+    }
+
+    let appData = null;
+    let videoData = null;
+    let unlocked = false;
+    let preloadedBlobUrl = null;
+    let adInterval = null;
+    let adPurpose = 'unlock';
+    let qualities = [];
+    let currentQualityIndex = 0;
+    let pendingQualityIndex = null;
+    let qualityAdUnlocked = false;
+    let currentFramePlatform = '';
+    let framePlaying = true;
+    let playerMuted = false;
+    let playerVolume = 1;
+    let frameCurrentTime = 0;
+    let frameDuration = 0;
+    let controlsTimer = null;
+
+    function scrollToUnlockSection() {
+      document.getElementById('unlock-section').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function init() {
+      appData = getLocalData();
+      videoData = (appData.links || []).find(l => l.id === linkId) || appData.links[0];
+
+      if (!videoData) {
+        document.getElementById('lock-heading').innerText = "Video Not Found";
+        return;
+      }
+
+      // Preload direct/upload media. Platform embeds are loaded when unlocked.
+      if (videoData.videoSourceType === 'file' || (videoData.videoUrl && videoData.videoUrl.startsWith('indexeddb://'))) {
+        loadVideoBlobURL(videoData.id).then(url => {
+          if (url) {
+            preloadedBlobUrl = url;
+            const vid = document.getElementById('player-video');
+            vid.src = url; vid.load();
+          }
+        });
+      } else if (videoData.videoUrl) {
+        const media = getPlatformMedia(videoData.videoUrl,{autoplay:false,muted:false,controls:false});
+        if (media.type === 'video') {
+          const vid = document.getElementById('player-video');
+          vid.src = media.src; vid.load();
+        }
+      }
+
+      // Texts & Metadata
+      document.title = slStripEmoji(videoData.title);
+      document.getElementById('lock-heading').innerText = videoData.title;
+      document.getElementById('lock-sec').innerText = videoData.rewardAdDuration || 10;
+      resolveStoredImage(videoData.thumbnail).then(url => { if (url) document.getElementById('locked-poster').style.backgroundImage = `url('${url}')`; });
+      initializeQualitySelector();
+
+      // Fullscreen Ad Setup
+      if (videoData.rewardTitle) document.getElementById('ad-display-title').innerText = videoData.rewardTitle;
+      if (videoData.rewardContent) document.getElementById('ad-display-desc').innerText = videoData.rewardContent;
+      
+      // Banner ads are mounted automatically by storage.js using their page placements.
+
+      // Featured Next Video
+      if (videoData.featuredNextVideoId) {
+        const f = appData.links.find(l => l.id === videoData.featuredNextVideoId);
+        if (f) {
+          document.getElementById('featured-box').style.display = 'block';
+          document.getElementById('featured-link').href = 'watch.html?id=' + f.id;
+          document.getElementById('featured-title').innerText = f.title;
+          document.getElementById('featured-thumb').src = f.thumbnail;
+          hydrateIndexedImages(document.getElementById('featured-box'));
+        }
+      }
+
+      // Next Videos List
+      let nextVideos = [];
+      if (videoData.selectedNextIds && videoData.selectedNextIds.length > 0) {
+        nextVideos = appData.links.filter(l => videoData.selectedNextIds.includes(l.id) && l.id !== videoData.id);
+      }
+      if (nextVideos.length === 0) {
+        nextVideos = appData.links.filter(l => l.id !== videoData.id);
+      }
+
+      const nextGrid = document.getElementById('next-videos-grid');
+      if (nextVideos.length > 0) {
+        nextGrid.innerHTML = nextVideos.map(v => `
+          <a href="watch.html?id=${v.id}" class="next-card">
+            <img src="${v.thumbnail}" class="next-thumb" alt="">
+            <div style="overflow:hidden;">
+              <div class="next-name">${escapeHtml(v.title)}</div>
+              <div style="font-size:0.75rem; color:#00f2fe;"><span class="sl-ic" data-icon="play"></span> Watch Next</div>
+            </div>
+          </a>
+        `).join('');
+      } else {
+        nextGrid.innerHTML = '<div style="color:#64748b; font-size:0.85rem;">No further videos available.</div>';
+      }
+
+      // Record banner impression
+      appData.stats.bannerImpressions = (appData.stats.bannerImpressions || 0) + 1;
+      appData.stats.estimatedEarningsUSD = parseFloat(((appData.stats.estimatedEarningsUSD || 0) + (appData.settings.cpmBanner / 1000)).toFixed(4));
+      saveLocalData(appData);
+    }
+
+
+    function showNextVideoHint() {
+      const hint = document.getElementById('next-video-hint');
+      document.getElementById('player-box').classList.add('has-next-hint');
+      hint.style.display = 'flex';
+      slHydrate(hint);
+    }
+
+    function scrollToNextVideo() {
+      const featured = document.getElementById('featured-box');
+      const target = featured && featured.style.display !== 'none' ? featured : document.querySelector('.next-videos-section');
+      document.getElementById('next-video-hint').style.display = 'none';
+      document.getElementById('player-box').classList.remove('has-next-hint');
+      if (target) target.scrollIntoView({behavior:'smooth',block:'center'});
+    }
+
+    function initializeQualitySelector() {
+      qualities = getVideoQualities(videoData);
+      const select = document.getElementById('quality-select');
+      select.innerHTML = qualities.map((quality,index) => {
+        const lock = quality.rewarded && !qualityAdUnlocked ? ' · REWARD' : '';
+        return '<option value="' + index + '">' + quality.label + lock + '</option>';
+      }).join('');
+      if (currentQualityIndex >= qualities.length) currentQualityIndex = 0;
+      select.value = String(currentQualityIndex);
+    }
+
+    function setControlIcon(id,name) {
+      const button = document.getElementById(id);
+      if (button) button.innerHTML = '<span class="sl-ic">' + SLIcon(name) + '</span>';
+    }
+
+    function formatPlayerTime(seconds) {
+      if (!isFinite(seconds) || seconds < 0) return '0:00';
+      const minutes = Math.floor(seconds / 60);
+      return minutes + ':' + String(Math.floor(seconds % 60)).padStart(2,'0');
+    }
+
+    function isMainPlaying() {
+      const vid = document.getElementById('player-video');
+      if (vid.classList.contains('playing')) return !vid.paused;
+      return document.getElementById('player-iframe').classList.contains('playing') && framePlaying;
+    }
+
+    function wakePlayerControls() {
+      if (!unlocked) return;
+      const box = document.getElementById('player-box');
+      box.classList.add('controls-visible');
+      if (controlsTimer) clearTimeout(controlsTimer);
+      if (isMainPlaying()) controlsTimer = setTimeout(() => {
+        if (isMainPlaying()) box.classList.remove('controls-visible');
+      },2800);
+    }
+
+    function updatePlayerChrome() {
+      const frameMode = document.getElementById('player-iframe').classList.contains('playing');
+      const apiSupported = !frameMode || currentFramePlatform === 'youtube' || currentFramePlatform === 'vimeo';
+      const playing = isMainPlaying();
+      const box = document.getElementById('player-box');
+      box.classList.toggle('source-frame',frameMode);
+      box.classList.toggle('is-playing',playing);
+      box.classList.toggle('no-timeline',frameMode && !apiSupported);
+      setControlIcon('player-play-toggle',playing ? 'pause' : 'play');
+      setControlIcon('player-mute-toggle',playerMuted || playerVolume === 0 ? 'mute' : 'volume');
+      document.getElementById('player-play-toggle').disabled = !apiSupported;
+      document.getElementById('player-center-play').disabled = !apiSupported;
+      document.getElementById('player-volume').disabled = !apiSupported;
+      document.getElementById('player-mute-toggle').disabled = !apiSupported;
+      document.getElementById('player-rate').disabled = !apiSupported;
+      document.getElementById('player-volume').value = String(Math.round(playerVolume * 100));
+    }
+
+    function sendFrameCommand(action,value) {
+      const frame = document.getElementById('player-iframe');
+      if (!frame.contentWindow) return;
+      if (currentFramePlatform === 'youtube') {
+        const commands = {play:'playVideo',pause:'pauseVideo',mute:'mute',unmute:'unMute',quality:'setPlaybackQuality',volume:'setVolume',seek:'seekTo',rate:'setPlaybackRate'};
+        if (!commands[action]) return;
+        const args = action === 'quality' ? [value] : action === 'volume' ? [Math.round(value * 100)] : action === 'seek' ? [value,true] : action === 'rate' ? [value] : [];
+        frame.contentWindow.postMessage(JSON.stringify({event:'command',func:commands[action],args}),'*');
+      } else if (currentFramePlatform === 'vimeo') {
+        const methods = {play:'play',pause:'pause',quality:'setQuality',volume:'setVolume',seek:'setCurrentTime',rate:'setPlaybackRate'};
+        if (action === 'mute' || action === 'unmute') {
+          frame.contentWindow.postMessage({method:'setVolume',value:action === 'mute' ? 0 : playerVolume},'*');
+        } else if (methods[action]) {
+          const qualityMap = {highres:'2160p',hd1080:'1080p',hd720:'720p',large:'480p',medium:'360p',small:'240p'};
+          const commandValue = action === 'quality' ? (qualityMap[value] || value) : value;
+          frame.contentWindow.postMessage({method:methods[action],value:commandValue},'*');
+        }
+      }
+    }
+
+    function prepareFrameApi(quality) {
+      if (currentFramePlatform === 'youtube') {
+        const frame = document.getElementById('player-iframe');
+        if (frame.contentWindow) frame.contentWindow.postMessage(JSON.stringify({event:'listening',id:videoData.id}),'*');
+      } else if (currentFramePlatform === 'vimeo') {
+        const frame = document.getElementById('player-iframe');
+        ['timeupdate','play','pause','volumechange','durationchange'].forEach(eventName => {
+          if (frame.contentWindow) frame.contentWindow.postMessage({method:'addEventListener',value:eventName},'*');
+        });
+      }
+      sendFrameCommand('volume',playerVolume);
+      if (playerMuted) sendFrameCommand('mute');
+      sendFrameCommand('rate',Number(document.getElementById('player-rate').value || 1));
+      if (quality && quality.platformQuality) sendFrameCommand('quality',quality.platformQuality);
+    }
+
+    function toggleMainPlayback() {
+      if (!unlocked) return;
+      const vid = document.getElementById('player-video');
+      const frame = document.getElementById('player-iframe');
+      if (vid.classList.contains('playing')) {
+        if (vid.paused) vid.play().catch(() => {}); else vid.pause();
+      } else if (frame.classList.contains('playing') && (currentFramePlatform === 'youtube' || currentFramePlatform === 'vimeo')) {
+        framePlaying = !framePlaying;
+        sendFrameCommand(framePlaying ? 'play' : 'pause');
+      }
+      updatePlayerChrome(); wakePlayerControls();
+    }
+
+    function applyPlayerVolume() {
+      const vid = document.getElementById('player-video');
+      vid.volume = playerVolume;
+      vid.muted = playerMuted || playerVolume === 0;
+      if (document.getElementById('player-iframe').classList.contains('playing')) {
+        sendFrameCommand('volume',playerVolume);
+        sendFrameCommand(playerMuted || playerVolume === 0 ? 'mute' : 'unmute');
+      }
+      updatePlayerChrome();
+    }
+
+    function toggleMainMute() {
+      playerMuted = !playerMuted;
+      if (!playerMuted && playerVolume === 0) playerVolume = 0.5;
+      applyPlayerVolume(); wakePlayerControls();
+    }
+
+    function changePlaybackRate(value) {
+      const rate = Number(value) || 1;
+      const vid = document.getElementById('player-video');
+      vid.playbackRate = rate;
+      if (document.getElementById('player-iframe').classList.contains('playing')) sendFrameCommand('rate',rate);
+      wakePlayerControls();
+    }
+
+    function pauseMainForAd() {
+      const vid = document.getElementById('player-video');
+      if (vid.classList.contains('playing')) vid.pause();
+      if (document.getElementById('player-iframe').classList.contains('playing')) {
+        framePlaying = false; sendFrameCommand('pause');
+      }
+      document.getElementById('player-box').classList.remove('controls-visible');
+      updatePlayerChrome();
+    }
+
+    function updatePlayerTimeline() {
+      const vid = document.getElementById('player-video');
+      const frameMode = document.getElementById('player-iframe').classList.contains('playing');
+      const current = frameMode ? frameCurrentTime : (isFinite(vid.currentTime) ? vid.currentTime : 0);
+      const duration = frameMode ? frameDuration : (isFinite(vid.duration) ? vid.duration : 0);
+      const timeline = document.getElementById('player-timeline');
+      timeline.max = duration > 0 ? duration : 100;
+      timeline.value = current;
+      timeline.disabled = frameMode ? !(frameDuration > 0) : !(vid.duration > 0);
+      document.getElementById('player-current-time').textContent = formatPlayerTime(current);
+      document.getElementById('player-duration').textContent = formatPlayerTime(duration);
+      updatePlayerChrome();
+    }
+
+    async function playQuality(index, restorePosition = true) {
+      const quality = qualities[index];
+      if (!quality) return;
+      const vid = document.getElementById('player-video');
+      const frame = document.getElementById('player-iframe');
+      const oldTime = restorePosition && vid.classList.contains('playing') && isFinite(vid.currentTime) ? vid.currentTime : 0;
+      const wasPaused = restorePosition && vid.classList.contains('playing') ? vid.paused : false;
+      vid.pause(); vid.classList.remove('playing'); frame.classList.remove('playing');
+      frame.src = 'about:blank'; currentFramePlatform = ''; frameCurrentTime = 0; frameDuration = 0;
+
+      let directUrl = '';
+      if (quality.sourceType === 'file' || quality.url.startsWith('indexeddb://')) {
+        directUrl = quality.id === 'original' && preloadedBlobUrl ? preloadedBlobUrl : await loadVideoBlobURL(quality.fileId || videoData.id);
+        if (!directUrl) { slAlert('This uploaded quality is not available on this device.','Quality Unavailable'); return; }
+      }
+      if (directUrl) {
+        vid.src = directUrl;
+      } else {
+        const media = getPlatformMedia(quality.url,{autoplay:true,muted:playerMuted,loop:false,controls:false});
+        if (media.type === 'iframe') {
+          frame.src = media.src; frame.classList.add('playing');
+          currentFramePlatform = media.platform || ''; framePlaying = true;
+          currentQualityIndex = index;
+          document.getElementById('quality-select').value = String(index);
+          frame.addEventListener('load',() => setTimeout(() => prepareFrameApi(quality),500),{once:true});
+          updatePlayerTimeline(); wakePlayerControls();
+          return;
+        }
+        if (media.type !== 'video') { slAlert('This video source cannot be played.','Playback Unavailable'); return; }
+        vid.src = media.src;
+      }
+
+      vid.classList.add('playing');
+      vid.addEventListener('loadedmetadata', function restoreQualityPosition() {
+        updatePlayerRatio();
+        if (oldTime > 0 && oldTime < vid.duration) vid.currentTime = oldTime;
+        vid.volume = playerVolume; vid.muted = playerMuted || playerVolume === 0;
+        vid.playbackRate = Number(document.getElementById('player-rate').value || 1);
+        if (!wasPaused) vid.play().catch(() => {
+          vid.muted = true; playerMuted = true; vid.play().catch(() => {}); updatePlayerChrome();
+        });
+        updatePlayerTimeline(); wakePlayerControls();
+      }, { once:true });
+      vid.load();
+      currentQualityIndex = index;
+      document.getElementById('quality-select').value = String(index);
+      updatePlayerTimeline(); wakePlayerControls();
+    }
+
+    function handleQualityChange(select) {
+      const next = parseInt(select.value);
+      const quality = qualities[next];
+      if (quality && quality.rewarded && !qualityAdUnlocked) {
+        pendingQualityIndex = next;
+        select.value = String(currentQualityIndex);
+        startFullscreenAd('quality');
+        return;
+      }
+      playQuality(next);
+    }
+
+    function openSponsorDestination() {
+      const targetUrl = slSafeAdLink(videoData?.rewardAdLink || 'https://google.com');
+      window.open(targetUrl,'_blank','noopener,noreferrer');
+    }
+
+    async function startFullscreenAd(purpose = 'unlock') {
+      if ((unlocked && purpose === 'unlock') || document.getElementById('fullscreen-ad').classList.contains('open')) return;
+      adPurpose = purpose;
+      pauseMainForAd();
+      if (screen.orientation && screen.orientation.unlock) { try { screen.orientation.unlock(); } catch (e) {} }
+      const overlay = document.getElementById('fullscreen-ad');
+      overlay.classList.add('open'); document.body.classList.add('sl-ad-playing');
+      try {
+        if (document.fullscreenElement && document.fullscreenElement !== overlay) await document.exitFullscreen();
+        if (overlay.requestFullscreen) await overlay.requestFullscreen();
+      } catch (e) { /* Immersive fixed layout remains; orientation is never forced. */ }
+      const host = document.getElementById('ad-commercial-media');
+      const source = videoData.rewardAdVideo || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyBlazes.mp4';
+      await mountAdaptiveMedia(host,source,{
+        fileId:'rewarded-' + videoData.id, autoplay:true, muted:true,
+        loop:videoData.rewardAdLoop !== false, controls:false, lockPlayback:true,
+        className:'ad-video-player playing', eager:true
+      });
+
+      const total = videoData?.rewardAdDuration || 10;
+      let remain = total;
+      const countdownEl = document.getElementById('ad-timer-countdown');
+      countdownEl.textContent = remain;
+      if (adInterval) clearInterval(adInterval);
+      adInterval = setInterval(() => {
+        remain -= 1; countdownEl.textContent = remain;
+        if (remain <= 0) { clearInterval(adInterval); finishAdAndUnlock(false); }
+      },1000);
+    }
+
+    function handleCheckOfferClick(event) {
+      if (event) event.stopPropagation();
+      openSponsorDestination();
+      if (adInterval) clearInterval(adInterval);
+      finishAdAndUnlock(true);
+    }
+
+    async function finishAdAndUnlock(wasClicked = false) {
+      const overlay = document.getElementById('fullscreen-ad');
+      if (!overlay.classList.contains('open')) return;
+      if (adInterval) clearInterval(adInterval);
+      overlay.classList.remove('open'); document.body.classList.remove('sl-ad-playing');
+      if (document.fullscreenElement === overlay && document.exitFullscreen) {
+        try { await document.exitFullscreen(); } catch (e) {}
+      }
+      const host = document.getElementById('ad-commercial-media');
+      const adVideo = host.querySelector('video');
+      if (adVideo) adVideo.pause();
+      host.innerHTML = '';
+
+      const completedPurpose = adPurpose;
+      if (completedPurpose === 'quality') {
+        qualityAdUnlocked = true; // One completed reward enables both HD and 1080p for this viewing session.
+        const next = pendingQualityIndex == null ? Math.min(1,qualities.length - 1) : pendingQualityIndex;
+        pendingQualityIndex = null; adPurpose = 'unlock';
+        initializeQualitySelector();
+        await playQuality(next);
+        wakePlayerControls();
+        showNextVideoHint();
+      } else {
+        unlocked = true; adPurpose = 'unlock';
+        const box = document.getElementById('player-box');
+        box.classList.add('is-unlocked');
+        document.getElementById('locked-poster').style.display = 'none';
+        document.getElementById('player-tools').style.display = 'flex';
+        document.getElementById('player-control-bar').style.display = 'block';
+        box.scrollIntoView({ behavior:'smooth' });
+        await playQuality(currentQualityIndex,false);
+        wakePlayerControls();
+        showNextVideoHint();
+        const vIdx = appData.links.findIndex(l => l.id === videoData.id);
+        if (vIdx !== -1) appData.links[vIdx].views = (appData.links[vIdx].views || 0) + 1;
+        appData.stats.totalUnlocks = (appData.stats.totalUnlocks || 0) + 1;
+      }
+
+      const multiplier = wasClicked ? 1.5 : 1.0;
+      appData.stats.rewardedAdCompletes = (appData.stats.rewardedAdCompletes || 0) + 1;
+      appData.stats.estimatedEarningsUSD = parseFloat(((appData.stats.estimatedEarningsUSD || 0) + ((appData.settings.cpmRewarded / 1000) * multiplier)).toFixed(4));
+      saveLocalData(appData);
+    }
+
+    function updatePlayerRatio() {
+      const vid = document.getElementById('player-video');
+      const box = document.getElementById('player-box');
+      if (!vid.videoWidth || !vid.videoHeight) return;
+      const portrait = vid.videoHeight > vid.videoWidth;
+      box.classList.toggle('is-portrait',portrait);
+      box.style.setProperty('--video-ratio',vid.videoWidth + '/' + vid.videoHeight);
+      if (!portrait) box.style.aspectRatio = vid.videoWidth + '/' + vid.videoHeight;
+      else box.style.removeProperty('aspect-ratio');
+    }
+
+    async function lockOrientationForVideo() {
+      const vid = document.getElementById('player-video');
+      if (!screen.orientation || !screen.orientation.lock) return;
+      const horizontal = !vid.videoWidth || vid.videoWidth >= vid.videoHeight;
+      if (horizontal) {
+        try { await screen.orientation.lock('landscape'); } catch (e) { /* Browser may require native fullscreen or not support locking. */ }
+      }
+    }
+
+    async function openVideoFullscreen() {
+      const box = document.getElementById('player-box');
+      const vid = document.getElementById('player-video');
+      try {
+        if (document.fullscreenElement) await document.exitFullscreen();
+        else if (box.requestFullscreen) { await box.requestFullscreen(); await lockOrientationForVideo(); }
+        else if (vid.webkitEnterFullscreen) vid.webkitEnterFullscreen();
+      } catch (e) {
+        if (vid.webkitEnterFullscreen) vid.webkitEnterFullscreen();
+      }
+    }
+
+    const mainVideo = document.getElementById('player-video');
+    mainVideo.addEventListener('loadedmetadata',updatePlayerRatio);
+    ['loadedmetadata','timeupdate','play','pause','volumechange','durationchange'].forEach(name => mainVideo.addEventListener(name,updatePlayerTimeline));
+    mainVideo.addEventListener('play',wakePlayerControls);
+    mainVideo.addEventListener('pause',wakePlayerControls);
+    document.getElementById('player-timeline').addEventListener('input',event => {
+      const time = Number(event.target.value);
+      if (mainVideo.classList.contains('playing') && isFinite(mainVideo.duration)) mainVideo.currentTime = time;
+      else if (document.getElementById('player-iframe').classList.contains('playing')) { frameCurrentTime = time; sendFrameCommand('seek',time); }
+      wakePlayerControls();
+    });
+    document.getElementById('player-volume').addEventListener('input',event => {
+      playerVolume = Math.max(0,Math.min(1,Number(event.target.value) / 100));
+      playerMuted = playerVolume === 0;
+      applyPlayerVolume(); wakePlayerControls();
+    });
+    document.getElementById('player-rate').addEventListener('change',event => changePlaybackRate(event.target.value));
+    const playerBox = document.getElementById('player-box');
+    playerBox.addEventListener('pointermove',wakePlayerControls);
+    playerBox.addEventListener('pointerdown',wakePlayerControls);
+    playerBox.addEventListener('touchstart',wakePlayerControls,{passive:true});
+    window.addEventListener('message',event => {
+      let data = event.data;
+      try { if (typeof data === 'string') data = JSON.parse(data); } catch (e) { return; }
+      if (!data || typeof data !== 'object') return;
+      if (currentFramePlatform === 'youtube' && data.info) {
+        const info = data.info;
+        if (isFinite(info.currentTime)) frameCurrentTime = info.currentTime;
+        if (isFinite(info.duration)) frameDuration = info.duration;
+        if (typeof info.muted === 'boolean') playerMuted = info.muted;
+        if (isFinite(info.volume)) playerVolume = Math.max(0,Math.min(1,info.volume / 100));
+        if (info.playerState != null) {
+          const nextPlaying = info.playerState === 1;
+          if (nextPlaying !== framePlaying) { framePlaying = nextPlaying; wakePlayerControls(); }
+        }
+        updatePlayerTimeline();
+      } else if (currentFramePlatform === 'vimeo' && data.event) {
+        const values = data.data || {};
+        if (data.event === 'timeupdate') {
+          if (isFinite(values.seconds)) frameCurrentTime = values.seconds;
+          if (isFinite(values.duration)) frameDuration = values.duration;
+        }
+        if (data.event === 'durationchange' && isFinite(values.duration)) frameDuration = values.duration;
+        if (data.event === 'volumechange' && isFinite(values.volume)) { playerVolume = values.volume; playerMuted = values.volume === 0; }
+        if (data.event === 'play' || data.event === 'pause') { framePlaying = data.event === 'play'; wakePlayerControls(); }
+        updatePlayerTimeline();
+      }
+    });
+    document.getElementById('fullscreen-ad').addEventListener('click',event => {
+      if (!event.currentTarget.classList.contains('open')) return;
+      if (event.target.closest('button,a,input,select,label')) return;
+      openSponsorDestination(); // Visit only: never unlock, complete a timer, or record a reward.
+    });
+    document.addEventListener('fullscreenchange',async event => {
+      if (document.fullscreenElement === document.getElementById('player-box')) await lockOrientationForVideo();
+      else if (screen.orientation && screen.orientation.unlock) {
+        try { screen.orientation.unlock(); } catch (e) {}
+      }
+    });
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    init();
+  </script>
+</body>
+</html>

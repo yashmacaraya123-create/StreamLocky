@@ -1,0 +1,82 @@
+STREAMLOCK PROPRIETARY SOFTWARE LICENSE
+Version 1.0 — 2026
+
+Copyright © 2026 Yash Macaraya. All rights reserved.
+
+This license applies to the StreamLock website, including its original source
+code, custom player interface, scripts, styles, visual layout, documentation,
+and associated original materials (collectively, the "Software"). Yash
+Macaraya, or the copyright owner named in a separate written agreement, is
+referred to as the "Licensor."
+
+1. OWNERSHIP
+The Software is proprietary to the Licensor. Copyright and all other
+intellectual-property rights not expressly granted remain with the Licensor.
+Possession, purchase, hosting, or access to the Software does not transfer
+ownership.
+
+2. LIMITED PERMISSION
+A person or organization may install, host, modify, or use the Software only
+when authorized by this license or by a separate written agreement with the
+Licensor. Any authorization is limited, non-exclusive, non-transferable, and
+revocable as stated in the applicable agreement.
+
+If you have not received authorization from the Licensor, this license grants
+you no right to copy, use, modify, publish, host, or redistribute the Software.
+
+3. AUTHORIZED DEPLOYMENTS
+An authorized deployment may be used only for the websites, domains, number
+of installations, users, purposes, and period specified by the Licensor.
+Additional production, development, backup, client, or reseller deployments
+require the Licensor's permission.
+
+4. RESTRICTIONS
+Without prior written permission from the Licensor, you may not:
+a. copy, reproduce, republish, distribute, sell, rent, lease, sublicense, or
+   commercially exploit the Software;
+b. share the source code or access credentials with unauthorized persons;
+c. remove or alter copyright, license, ownership, or attribution notices;
+d. claim the Software, its original design, or its original code as your own;
+e. use substantial portions of the Software to create a competing product; or
+f. reverse engineer the Software, except where this restriction is prohibited
+   by applicable law.
+
+5. MODIFICATIONS
+Approved modifications do not transfer ownership of the original Software.
+Ownership and usage rights for custom commissioned modifications may be
+defined in a separate written agreement.
+
+6. THIRD-PARTY MATERIAL
+External videos, advertising content, trademarks, platform embeds, fonts,
+images, libraries, APIs, and other third-party materials are not owned or
+relicensed under this document. Their respective licenses, permissions, and
+platform terms continue to apply. You are responsible for obtaining rights to
+any third-party content you upload, embed, or distribute.
+
+7. TERMINATION
+Unauthorized use automatically terminates any permission granted for that
+use. Upon termination, the unauthorized party must stop using the Software
+and delete unauthorized copies and deployments, subject to applicable law
+and any separate written agreement.
+
+8. NO WARRANTY
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE SOFTWARE IS PROVIDED
+"AS IS" AND "AS AVAILABLE," WITHOUT WARRANTIES OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE, AND NON-INFRINGEMENT.
+
+9. LIMITATION OF LIABILITY
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE LICENSOR SHALL NOT BE
+LIABLE FOR INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES, OR FOR LOSS OF PROFITS, REVENUE, DATA, GOODWILL, OR BUSINESS
+OPPORTUNITIES ARISING FROM OR RELATED TO THE SOFTWARE OR ITS USE.
+
+10. GOVERNING TERMS
+A separate signed agreement between the Licensor and a licensee takes
+priority over this document for the matters expressly covered by that
+agreement. Applicable governing law and dispute-resolution procedures may be
+specified in that agreement or by the Licensor in a subsequent written notice.
+
+For licensing, deployment, resale, client-use, or modification permission,
+contact the Licensor through the contact details supplied with the authorized
+StreamLock distribution.

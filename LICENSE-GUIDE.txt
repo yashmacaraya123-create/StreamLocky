@@ -1,0 +1,37 @@
+HOW TO USE THE STREAMLOCK LICENSE
+
+The included LICENSE.txt is a proprietary license. It reserves ownership and
+requires permission before other people may use, copy, modify, host, sell, or
+redistribute StreamLock. It does not make your project open source.
+
+QUICK SETUP
+1. Open LICENSE.txt and confirm the copyright owner and year. It currently
+   says: Copyright © 2026 Yash Macaraya.
+2. Keep LICENSE.txt in StreamLock's main folder whenever you share, sell, or
+   deploy the project.
+3. If you authorize a client or customer, give them written terms identifying:
+   - their name or company;
+   - approved domain names and number of installations;
+   - whether modifications are allowed;
+   - whether resale, sublicensing, and client deployments are allowed;
+   - the license period, payment terms, support, and termination rules.
+4. Save proof of your original work, such as dated source archives, commits,
+   project notes, and deployment records.
+5. Add this short notice near the top of important original source files if
+   desired:
+
+   Copyright © 2026 Yash Macaraya. All rights reserved.
+   StreamLock proprietary software. See LICENSE.txt.
+
+IMPORTANT LIMITS
+- A copyright notice does not give you ownership of third-party videos,
+  advertisements, images, trademarks, APIs, or embedded platform content.
+  Obtain separate permission for content you do not own.
+- Uploading a project to GitHub or deploying it to Netlify does not by itself
+  make it open source. The license determines what others may do.
+- If you want others to reuse the code freely, use an open-source license such
+  as MIT instead. Do not apply both licenses to the same distribution without
+  clearly explaining which files and permissions each license covers.
+- This document is a practical template, not legal advice. For commercial
+  licensing, enforcement, or a customized agreement, consult a qualified
+  lawyer in the jurisdiction that applies to you and your customers.

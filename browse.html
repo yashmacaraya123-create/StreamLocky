@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Browse Video Lists | StreamLock</title>
+  <link rel="stylesheet" href="theme.css">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{min-height:100vh;background:#060913;color:#f1f5f9}
+    .browse-shell{width:min(100% - 28px,1040px);margin:22px auto 42px}
+    .browse-top{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+    .browse-title{font-size:clamp(1.35rem,3vw,1.9rem);line-height:1.15;color:#fff}
+    .browse-subtitle{color:#8298b9;font-size:.8rem;margin-top:5px}
+    .collection-tabs{display:flex;gap:7px;margin-bottom:14px;padding:5px;background:#0d1424;border:1px solid rgba(255,255,255,.08);border-radius:10px;width:fit-content;max-width:100%}
+    .collection-tab{border:0;background:transparent;color:#8fa6c5;padding:8px 13px;border-radius:7px;cursor:pointer;font-size:.77rem;white-space:nowrap}
+    .collection-tab.active{background:#00f2fe;color:#051322}
+    .search-form{display:flex;gap:8px;margin-bottom:14px}
+    .search-input{flex:1;min-width:0;background:#0d1424;border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#fff;padding:10px 12px;outline:0;font-size:.84rem}
+    .search-input:focus{border-color:#00f2fe;box-shadow:0 0 0 3px rgba(0,242,254,.07)}
+    .search-button,.clear-button{border:0;border-radius:8px;padding:9px 15px;cursor:pointer;font-size:.78rem;font-weight:800}
+    .search-button{background:#00f2fe;color:#051322}.clear-button{background:#162035;color:#a9bdd7;border:1px solid rgba(255,255,255,.1)}
+    .results-line{display:flex;justify-content:space-between;gap:10px;color:#7188aa;font-size:.7rem;margin:0 2px 10px}
+    .empty-state{padding:30px 18px;text-align:center;background:#0d1424;border:1px dashed rgba(255,255,255,.14);border-radius:11px;color:#8fa6c5;font-size:.82rem}
+    .empty-state a{color:#00f2fe}
+    @media(max-width:520px){.browse-shell{width:min(100% - 20px,1040px);margin-top:15px}.collection-tabs{width:100%}.collection-tab{flex:1;padding-inline:8px}.search-form{flex-wrap:wrap}.search-input{flex-basis:100%}.search-button{flex:1}.clear-button{flex:0 0 auto}}
+  </style>
+</head>
+<body>
+  <main class="browse-shell">
+    <div class="browse-top">
+      <div>
+        <h1 class="browse-title" id="browse-title">Browse Video Lists</h1>
+        <p class="browse-subtitle" id="browse-subtitle">Discover collections and save the ones you want to watch later.</p>
+      </div>
+    </div>
+
+    <nav class="collection-tabs" aria-label="Video list views">
+      <button class="collection-tab" id="tab-all" onclick="showCollection(false)">All Video Lists</button>
+      <button class="collection-tab" id="tab-favorites" onclick="showCollection(true)">My Favorite Video Lists</button>
+    </nav>
+
+    <form class="search-form" onsubmit="applySearch(event)" role="search">
+      <input type="search" class="search-input" id="browse-search" placeholder="Search by title, description, or status..." aria-label="Search video lists">
+      <button type="submit" class="search-button">Search</button>
+      <button type="button" class="clear-button" id="clear-search" onclick="clearSearch()" style="display:none;">Clear</button>
+    </form>
+
+    <div class="results-line"><span id="results-count">0 video lists</span><span id="account-label">Browsing as guest</span></div>
+    <div class="sl-list-grid" id="lists-container"></div>
+  </main>
+
+  <script src="storage.js"></script>
+  <script>
+    let appData = null;
+    let session = null;
+    let favoritesOnly = new URLSearchParams(location.search).get('favorites') === '1';
+    let searchQuery = '';
+
+    function init() {
+      appData = getLocalData();
+      session = getCurrentSession();
+      document.getElementById('account-label').innerText = session ? (session.name || session.email || 'Signed in') : 'Browsing as guest';
+      renderLists();
+    }
+
+    function showCollection(favorites) {
+      favoritesOnly = favorites;
+      const url = new URL(location.href);
+      if (favorites) url.searchParams.set('favorites','1');
+      else url.searchParams.delete('favorites');
+      history.replaceState({},'',url);
+      renderLists();
+    }
+
+    function applySearch(event) {
+      event.preventDefault();
+      searchQuery = document.getElementById('browse-search').value.trim().toLowerCase();
+      renderLists();
+    }
+
+    function clearSearch() {
+      searchQuery = '';
+      document.getElementById('browse-search').value = '';
+      renderLists();
+    }
+
+    function renderLists() {
+      const favoriteIds = session ? (session.favorites || []) : [];
+      let groups = appData.groups || [];
+      if (favoritesOnly) groups = groups.filter(group => favoriteIds.includes(group.id));
+      if (searchQuery) {
+        groups = groups.filter(group => [group.title,group.description,group.status || 'ongoing'].join(' ').toLowerCase().includes(searchQuery));
+      }
+
+      document.getElementById('tab-all').classList.toggle('active',!favoritesOnly);
+      document.getElementById('tab-favorites').classList.toggle('active',favoritesOnly);
+      document.getElementById('browse-title').innerText = favoritesOnly ? 'My Favorite Video Lists' : 'Browse Video Lists';
+      document.getElementById('browse-subtitle').innerText = favoritesOnly ? 'Your saved collections, ready to continue watching.' : 'Discover collections and save the ones you want to watch later.';
+      document.getElementById('results-count').innerText = groups.length + (groups.length === 1 ? ' video list' : ' video lists');
+      document.getElementById('clear-search').style.display = searchQuery ? '' : 'none';
+
+      const container = document.getElementById('lists-container');
+      if (!groups.length) {
+        let message = searchQuery ? 'No video lists match your search.' : 'No video lists are available yet.';
+        if (favoritesOnly && !session) message = 'Sign in to save and view your favorite video lists. <a href="login.html">Sign in here</a>.';
+        else if (favoritesOnly && !searchQuery) message = 'You have no favorite video lists yet. Open All Video Lists and select Favorite on any collection.';
+        container.innerHTML = '<div class="empty-state">' + message + '</div>';
+        return;
+      }
+      container.innerHTML = groups.map(group => listCardHtml(group,favoriteIds.includes(group.id))).join('');
+      slHydrate(container);
+      hydrateIndexedImages(container);
+    }
+
+    function listCardHtml(group,isFavorite) {
+      const videos = group.videoIds || [];
+      const listUrl = 'list.html?id=' + encodeURIComponent(group.id) + (favoritesOnly ? '&from=favorites' : '');
+      const complete = group.status === 'complete';
+      const status = complete ? 'Complete' : 'Ongoing';
+      const thumb = group.thumbnail || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=600&q=80';
+      return '<article class="sl-list-card">' +
+        '<a class="sl-list-thumb-link" href="' + listUrl + '" aria-label="Open ' + escapeHtml(group.title) + '"><img class="sl-list-thumb" src="' + escapeHtml(thumb) + '" alt=""></a>' +
+        '<div class="sl-list-info"><div class="sl-list-badges"><span class="sl-list-status ' + (complete ? 'complete' : '') + '">' + status + '</span><span class="sl-list-count">' + videos.length + (videos.length === 1 ? ' video' : ' videos') + '</span></div>' +
+        '<a class="sl-list-title" href="' + listUrl + '">' + escapeHtml(group.title) + '</a><p class="sl-list-desc">' + escapeHtml(group.description || 'Curated video collection.') + '</p></div>' +
+        '<div class="sl-list-actions"><button type="button" class="sl-list-favorite ' + (isFavorite ? 'active' : '') + '" onclick="toggleFavorite(\'' + group.id + '\')" aria-pressed="' + isFavorite + '"><span class="sl-ic">' + SLIcon(isFavorite ? 'star' : 'starOutline') + '</span><span>' + (isFavorite ? 'Favorited' : 'Favorite') + '</span></button>' +
+        '<a class="sl-list-open" href="' + listUrl + '">Open List <span class="sl-ic">' + SLIcon('arrowUpRight') + '</span></a>' + '</div></article>';
+    }
+
+    async function toggleFavorite(groupId) {
+      if (!session) {
+        if (await slConfirm('Sign in to save your favorite video lists. Would you like to sign in now?','Save Favorite Video Lists')) location.href = 'login.html';
+        return;
+      }
+      if (!session.favorites) session.favorites = [];
+      const index = session.favorites.indexOf(groupId);
+      if (index === -1) session.favorites.push(groupId);
+      else session.favorites.splice(index,1);
+      setCurrentSession(session);
+      const userIndex = appData.users.findIndex(user => user.id === session.id);
+      if (userIndex !== -1) {
+        appData.users[userIndex].favorites = session.favorites;
+        saveLocalData(appData);
+      }
+      renderLists();
+    }
+
+
+    function escapeHtml(value) {
+      return String(value || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
+    init();
+  </script>
+</body>
+</html>

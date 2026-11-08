@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Favorite Video Lists | StreamLock</title>
+  <link rel="stylesheet" href="theme.css">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{min-height:100vh;background:#060913;color:#f1f5f9}
+    .profile-shell{width:min(100% - 28px,1040px);margin:22px auto 42px}
+    .profile-card{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;background:linear-gradient(135deg,#0d1424,#101a30);border:1px solid rgba(0,242,254,.2);border-radius:12px;padding:18px 20px;margin-bottom:22px}
+    .profile-name{font-size:1.2rem;color:#fff;line-height:1.2}.profile-status{color:#8298b9;font-size:.77rem;margin-top:5px}
+    .profile-actions{display:flex;gap:7px;flex-wrap:wrap}.profile-button{display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.12);background:#162035;color:#cbd5e1;border-radius:7px;padding:8px 12px;text-decoration:none;font-size:.74rem;cursor:pointer}.profile-button.primary{background:#00f2fe;color:#051322;border-color:#00f2fe}
+    .favorites-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.favorites-heading a{text-decoration:none}.favorites-title{color:#f1f6ff;font-size:1.1rem}.favorites-link{color:#00f2fe;font-size:.72rem}
+    .empty-state{padding:25px 17px;text-align:center;background:#0d1424;border:1px dashed rgba(255,255,255,.14);border-radius:11px;color:#8fa6c5;font-size:.8rem}.empty-state a{color:#00f2fe}
+    @media(max-width:520px){.profile-shell{width:min(100% - 20px,1040px);margin-top:15px}.profile-card{padding:15px}.profile-actions{width:100%}.profile-button{flex:1}}
+  </style>
+</head>
+<body>
+  <main class="profile-shell">
+    <section class="profile-card">
+      <div><h1 class="profile-name" id="profile-name">Video Lounge</h1><p class="profile-status" id="profile-status">Explore collections and save your favorites.</p></div>
+      <div class="profile-actions"><a href="browse.html" class="profile-button primary">Browse Video Lists</a></div>
+    </section>
+
+    <section class="sl-ad-section">
+      <div class="sl-section-heading"><span class="sl-ic" data-icon="spark"></span><span>Sponsor Picks</span></div>
+      <p class="sl-section-sub">Featured partner offers selected for this page.</p>
+      <div class="sl-ad-trio" data-ad-placement="profile"></div>
+      <div class="sl-ad-disclosure">Sponsored content · supports free streaming</div>
+    </section>
+
+    <div class="favorites-heading">
+      <a href="browse.html?favorites=1"><h2 class="favorites-title">My Favorite Video Lists</h2></a>
+      <a href="browse.html?favorites=1" class="favorites-link">View all favorites →</a>
+    </div>
+    <div class="sl-list-grid" id="favorites-container"></div>
+  </main>
+
+  <script src="storage.js"></script>
+  <script>
+    let appData = null;
+    let session = null;
+
+    function init() {
+      appData = getLocalData();
+      session = getCurrentSession();
+      document.getElementById('profile-name').innerText = session ? ((session.name || 'Viewer') + '’s Video Lounge') : 'Welcome to StreamLock';
+      document.getElementById('profile-status').innerText = session ? (session.email || session.phone || 'Signed in') : 'Sign in to save your favorite video lists.';
+      renderFavorites();
+    }
+
+    function renderFavorites() {
+      const container = document.getElementById('favorites-container');
+      if (!session) {
+        container.innerHTML = '<div class="empty-state">You are browsing as a guest. <a href="login.html">Sign in</a> to save and view your favorite video lists.</div>';
+        return;
+      }
+      const favoriteIds = session.favorites || [];
+      const groups = (appData.groups || []).filter(group => favoriteIds.includes(group.id));
+      if (!groups.length) {
+        container.innerHTML = '<div class="empty-state">You have no favorite video lists yet. <a href="browse.html">Browse all video lists</a> and select Favorite on any collection.</div>';
+        return;
+      }
+      container.innerHTML = groups.map(group => listCardHtml(group)).join('');
+      slHydrate(container);
+      hydrateIndexedImages(container);
+    }
+
+    function listCardHtml(group) {
+      const videos = group.videoIds || [];
+      const listUrl = 'list.html?id=' + encodeURIComponent(group.id) + '&from=favorites';
+      const complete = group.status === 'complete';
+      const thumb = group.thumbnail || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=600&q=80';
+      return '<article class="sl-list-card"><a class="sl-list-thumb-link" href="' + listUrl + '"><img class="sl-list-thumb" src="' + escapeHtml(thumb) + '" alt=""></a>' +
+        '<div class="sl-list-info"><div class="sl-list-badges"><span class="sl-list-status ' + (complete ? 'complete' : '') + '">' + (complete ? 'Complete' : 'Ongoing') + '</span><span class="sl-list-count">' + videos.length + (videos.length === 1 ? ' video' : ' videos') + '</span></div>' +
+        '<a class="sl-list-title" href="' + listUrl + '">' + escapeHtml(group.title) + '</a><p class="sl-list-desc">' + escapeHtml(group.description || 'Curated video collection.') + '</p></div>' +
+        '<div class="sl-list-actions"><button type="button" class="sl-list-favorite active" onclick="removeFavorite(\'' + group.id + '\')" aria-pressed="true"><span class="sl-ic">' + SLIcon('star') + '</span><span>Favorited</span></button>' +
+        '<a class="sl-list-open" href="' + listUrl + '">Open List <span class="sl-ic">' + SLIcon('arrowUpRight') + '</span></a>' + '</div></article>';
+    }
+
+    function removeFavorite(groupId) {
+      session.favorites = (session.favorites || []).filter(id => id !== groupId);
+      setCurrentSession(session);
+      const userIndex = appData.users.findIndex(user => user.id === session.id);
+      if (userIndex !== -1) { appData.users[userIndex].favorites = session.favorites; saveLocalData(appData); }
+      renderFavorites();
+    }
+
+
+    function escapeHtml(value) {
+      return String(value || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
+    init();
+  </script>
+</body>
+</html>
