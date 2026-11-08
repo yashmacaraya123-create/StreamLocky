@@ -301,7 +301,10 @@ function slCloudContent(data) {
 }
 
 async function slCloudPushState(data) {
-  if (!window.slSupabase || !isDeveloperAccount()) return false;
+  if (!window.slSupabase || !isDeveloperAccount()) {
+    slTransferStatus('error','Cloud save blocked: sign in again with the authorized Maker account.',100);
+    return false;
+  }
   try {
     const { error } = await window.slSupabase.from('site_state').upsert({
       id:1,payload:slCloudContent(data),updated_at:new Date().toISOString()
@@ -310,7 +313,7 @@ async function slCloudPushState(data) {
     slTransferStatus('success','Published and synchronized with Supabase.',100);
     return true;
   } catch (e) {
-    slTransferStatus('error','Cloud save failed. Your local copy is retained.',100);
+    slTransferStatus('error','Cloud save failed: ' + (e.message || 'permission or network error'),100);
     console.error('StreamLock cloud save failed:',e.message || e);
     if (typeof showToast === 'function') showToast('Saved locally; cloud sync failed');
     return false;
@@ -433,7 +436,7 @@ async function slCloudUploadMedia(id,file) {
     slTransferStatus('success',(file.name || 'Media') + ' uploaded successfully.',100);
     return true;
   } catch (e) {
-    slTransferStatus('error','Upload failed. The local copy is retained; please retry.',100);
+    slTransferStatus('error','Upload failed: ' + (e.message || 'permission or network error'),100);
     console.error('StreamLock media upload failed:',e.message || e);
     if (typeof showToast === 'function') showToast('Media saved locally; cloud upload failed');
     return false;
@@ -631,7 +634,7 @@ function slLockSponsorPlayback(media) {
     if (Math.abs(media.currentTime - lastTime) > 0.75) media.currentTime = lastTime;
   });
   media.addEventListener('ratechange',() => { if (media.playbackRate !== 1) media.playbackRate = 1; });
-  media.addEventListener('volumechange',() => { if (!media.muted) media.muted = true; });
+  media.addEventListener('volumechange',() => { if (media.volume !== 1) media.volume = 1; });
   media.addEventListener('contextmenu',event => event.preventDefault());
 }
 
@@ -921,6 +924,9 @@ function slDecorate(root){
   });
 }
 let slObserver = null, slPending = false;
+function slRemoveNetlifyBadge(){
+  document.querySelectorAll('.netlify-badge,#netlify-badge,#netlify-badge-outer,[data-netlify-badge],[aria-label="Powered by Netlify"]').forEach(el => el.remove());
+}
 function slWatchDOM(){
   if (slObserver) return;
   slObserver = new MutationObserver(() => {
@@ -928,6 +934,7 @@ function slWatchDOM(){
     slPending = true;
     requestAnimationFrame(() => {
       slPending = false;
+      slRemoveNetlifyBadge();
       slObserver.disconnect();
       slHydrate(document.body);
       slDecorate(document.body);
@@ -1019,6 +1026,7 @@ function toggleSiteMenu(){
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSiteMenu(); });
 document.addEventListener('DOMContentLoaded', () => {
   injectGlobalNav();
+  slRemoveNetlifyBadge(); setTimeout(slRemoveNetlifyBadge,800); setTimeout(slRemoveNetlifyBadge,2500);
   mountPageAdBanners();
   hydrateIndexedImages(document.body);
   slHydrate(document.body);

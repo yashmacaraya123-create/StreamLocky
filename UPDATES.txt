@@ -1,32 +1,25 @@
-STREAMLOCK V10 — COMPACT DEVELOPER UI, PLAYER & STORAGE VISIBILITY
+STREAMLOCK V11 — SYNC REPAIR, REAL STORAGE & SPONSOR SOUND
 
-PLAYER
-- Reduced controls to small corner docks and a slim bottom-edge timeline.
-- Clicking the video immediately hides or shows the controls.
-- Automatic inactivity hiding, playback, volume, speed, quality, seeking,
-  fullscreen, and external-source API behavior remain intact.
-- Featured Next Video and its scroll prompt remain.
-- Removed only the More Videos to Watch section.
+SUPABASE
+- Updated is_admin() so the authorized Maker username/email is recognized
+  consistently by shared-content, media metadata, and Storage RLS policies.
+- Cloud/upload errors now show the actual backend message.
+- Added Manage Videos → Test Sync for an on-demand synchronization check.
+- Storage usage now recursively counts actual streamlock-media bucket objects
+  instead of relying only on media metadata rows.
+- Featured Next choices repopulate on startup and when editing; the current
+  video is excluded and saved choices remain available.
 
-UPLOAD AND SYNC STATUS
-- Added visible preparing, uploading, syncing, success, and failure indicators
-  for video files, thumbnails, commercials, links, lists, and settings.
-- Added straightforward file/link validation before publishing.
+SPONSOR PLAYBACK
+- Added a dedicated Mute/Unmute button to the fullscreen sponsor top bar.
+- Direct videos plus YouTube/Vimeo API playback support sound toggling.
+- Sponsor pause/seek/speed locks and click-to-visit reward rules remain intact.
 
-DEVELOPER HUB
-- Manage Video Lists now opens inside the Developer Hub as an integrated pane.
-- Other tab activation remains independent and unchanged.
-- Replaced the long video table with compact individually expandable cards.
-- Removed all Expand all and Collapse all controls.
-- Added a Supabase media storage meter with actual tracked bytes, file count,
-  estimated remaining plan space, refresh, and a direct Storage dashboard link.
-- The default plan allowance is 1 GiB and can be changed in supabase-config.js.
-  Usage is calculated from media_files metadata, not simulated.
+INTERFACE
+- Removed the bright tap/focus treatment from the video click shield.
+- Suppressed injected Powered by Netlify badges, including inside the embedded
+  video-list manager, so they no longer cover controls.
 
-VIDEO LISTS
-- Browse, favorites, collection videos, and Existing Collections now use small
-  vertical cards in responsive grids instead of long horizontal rows.
-
-CLOUD
-- Supabase authentication, shared content, media, favorites, stats, security
-  policies, and setup documentation from v9 remain included.
+REQUIRED FOR THE LIVE SYNC REPAIR
+Run the updated SUPABASE-SETUP.sql again, deploy all v11 files, and then sign
+out/in. See SYNC-FIX.md for the exact checklist.

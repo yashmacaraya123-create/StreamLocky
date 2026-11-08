@@ -272,10 +272,10 @@
         </div>
 
         <div class="storage-panel" id="storage-panel">
-          <div class="storage-panel-head"><div><strong>Supabase Video Storage</strong><span id="storage-status">Reading live media metadata…</span></div><button type="button" class="btn btn-outline" onclick="loadStorageUsage()">Refresh</button></div>
+          <div class="storage-panel-head"><div><strong>Supabase Video Storage</strong><span id="storage-status">Reading live media metadata…</span></div><div style="display:flex;gap:5px"><button type="button" class="btn btn-outline" onclick="slCloudPushState(appData)">Test Sync</button><button type="button" class="btn btn-outline" onclick="loadStorageUsage()">Refresh</button></div></div>
           <div class="storage-track"><div id="storage-used-bar"></div></div>
           <div class="storage-values"><span><b id="storage-used">—</b> used</span><span><b id="storage-available">—</b> available</span><span><b id="storage-files">—</b> files</span></div>
-          <div class="storage-links"><a href="https://supabase.com/dashboard/project/ttugwcsgurukaecjcmgo/storage/buckets/streamlock-media" target="_blank" rel="noopener">Open Supabase Storage ↗</a><span>Remaining space uses your configured plan allowance and tracked StreamLock files.</span></div>
+          <div class="storage-links"><a href="https://supabase.com/dashboard/project/ttugwcsgurukaecjcmgo/storage/buckets/streamlock-media" target="_blank" rel="noopener">Open Supabase Storage ↗</a><span>Actual bucket-object usage; remaining space uses your configured plan allowance.</span></div>
         </div>
         <div id="videos-tbody" class="video-manage-list"></div>
       </div>
@@ -564,6 +564,7 @@
       renderBalanceSources();
       refreshBalanceSources();
       renderVideos();
+      populateNextChoices();
       loadStorageUsage();
       populateBannersForm();
     }
@@ -694,22 +695,38 @@
       return (value >= 10 || unit === 0 ? value.toFixed(0) : value.toFixed(2)) + ' ' + units[unit];
     }
 
+    async function listStreamLockBucketObjects(path = '') {
+      const bucket = window.slSupabase.storage.from('streamlock-media');
+      const { data,error } = await bucket.list(path,{limit:1000,sortBy:{column:'name',order:'asc'}});
+      if (error) throw error;
+      let bytes = 0, files = 0;
+      for (const object of data || []) {
+        const size = object.metadata && Number(object.metadata.size);
+        if (Number.isFinite(size)) { bytes += size; files++; }
+        else {
+          const childPath = (path ? path + '/' : '') + object.name;
+          const nested = await listStreamLockBucketObjects(childPath);
+          bytes += nested.bytes; files += nested.files;
+        }
+      }
+      return {bytes,files};
+    }
+
     async function loadStorageUsage() {
       const status = document.getElementById('storage-status');
       if (!status) return;
-      status.textContent = 'Reading live media metadata…';
+      status.textContent = 'Reading actual Supabase bucket objects…';
       if (!window.slSupabase) { status.textContent = 'Supabase is not connected.'; return; }
       try {
-        const { data,error } = await window.slSupabase.from('media_files').select('size_bytes');
-        if (error) throw error;
-        const used = (data || []).reduce((sum,file) => sum + (Number(file.size_bytes) || 0),0);
+        const usage = await listStreamLockBucketObjects();
+        const used = usage.bytes;
         const quota = Number(window.SL_SUPABASE_CONFIG.storageQuotaBytes) || 1073741824;
         const available = Math.max(0,quota - used);
         document.getElementById('storage-used').textContent = formatStorageBytes(used);
         document.getElementById('storage-available').textContent = formatStorageBytes(available);
-        document.getElementById('storage-files').textContent = String((data || []).length);
+        document.getElementById('storage-files').textContent = String(usage.files);
         document.getElementById('storage-used-bar').style.width = Math.min(100,(used / quota) * 100) + '%';
-        status.textContent = 'Live tracked usage · ' + formatStorageBytes(quota) + ' configured plan allowance';
+        status.textContent = 'Live bucket objects · ' + formatStorageBytes(quota) + ' configured plan allowance';
       } catch (error) {
         status.textContent = 'Storage usage unavailable: ' + error.message;
         document.getElementById('storage-used').textContent = '—';
@@ -767,10 +784,10 @@
       await mountAdaptiveMedia(host,source,{ fileId:video ? 'rewarded-' + video.id : '', autoplay:false, muted:true, loop:false, controls:true, eager:true });
     }
 
-    function populateNextChoices() {
-      const videos = appData.links || [];
+    function populateNextChoices(excludeId = '') {
+      const videos = (appData.links || []).filter(video => video.id !== excludeId);
       const selectFeatured = document.getElementById('select-featured');
-      selectFeatured.innerHTML = '<option value="">None (Automatic)</option>' + 
+      selectFeatured.innerHTML = '<option value="">None (Automatic)</option>' +
         videos.map(v => `<option value="${v.id}">${escapeHtml(v.title)}</option>`).join('');
     }
 
@@ -1003,6 +1020,7 @@
         const genuine = saved && (saved.sourceType === 'file' || (saved.url || '').startsWith('indexeddb://'));
         document.getElementById('quality-' + key + '-current').style.display = genuine ? '' : 'none';
       });
+      populateNextChoices(v.id);
       document.getElementById('select-featured').value = v.featuredNextVideoId || '';
       previewRewardAdInEditor(v);
 
@@ -1027,6 +1045,7 @@
       document.getElementById('thumb-edit-preview').style.display = 'none';
       setThumbSourceMode('url');
       setRewardSourceMode('url');
+      populateNextChoices();
       showPane('videos');
     }
 

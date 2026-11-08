@@ -370,6 +370,8 @@
     .is-unlocked:not(.controls-visible) .player-center-play{opacity:0;visibility:hidden;pointer-events:none}
     @media(max-width:560px){.player-tools{padding:5px}.player-control-bar{padding:0}.player-buttons-row{left:5px;right:5px;bottom:11px;padding:0}.player-button-group{padding:2px 3px}.player-volume{width:42px}.player-timeline-row{left:5px;right:5px}.player-rate{max-width:52px}.player-button-group .player-time{display:none}}
     .has-next-hint .player-control-bar{padding:0}.has-next-hint .player-buttons-row{bottom:42px}.has-next-hint .player-timeline-row{bottom:33px}
+
+    .ad-corner-actions{display:flex;align-items:center;gap:8px}.ad-mute-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 11px;border:1px solid rgba(0,242,254,.35);border-radius:999px;background:rgba(4,12,24,.9);color:#c8fcff;font-size:.68rem;font-weight:800;cursor:pointer}.ad-mute-btn:hover{border-color:#00f2fe;color:#00f2fe}.ad-mute-btn .sl-ic{width:15px;height:15px;margin:0}.player-click-shield,.player-click-shield:hover,.player-click-shield:focus,.player-click-shield:active{-webkit-tap-highlight-color:transparent;appearance:none;border:0;outline:0;background:transparent;box-shadow:none}.player-container *{-webkit-tap-highlight-color:transparent}@media(max-width:560px){.ad-corner-actions{gap:5px}.ad-mute-btn{padding:7px 9px}.ad-mute-btn #ad-mute-label{display:none}}
   </style>
 </head>
 <body>
@@ -475,9 +477,9 @@
   <div class="fullscreen-ad-overlay" id="fullscreen-ad" role="dialog" aria-modal="true" aria-label="Sponsored video advertisement">
     <div class="ad-top-bar">
       <div class="ad-sponsor-label"><span class="sl-ic" data-icon="star"></span> Sponsor Video Ad</div>
-      <div class="ad-corner-timer">
-        <span class="sl-ic" data-icon="clock"></span>
-        <span id="ad-timer-countdown">10</span>s
+      <div class="ad-corner-actions">
+        <button type="button" class="ad-mute-btn" id="ad-mute-toggle" onclick="toggleAdMute(event)" aria-label="Unmute sponsor video" title="Unmute sponsor"><span class="sl-ic" data-icon="mute"></span><span id="ad-mute-label">Unmute</span></button>
+        <div class="ad-corner-timer"><span class="sl-ic" data-icon="clock"></span><span id="ad-timer-countdown">10</span>s</div>
       </div>
     </div>
 
@@ -523,6 +525,7 @@
     let framePlaying = true;
     let playerMuted = false;
     let playerVolume = 1;
+    let adMuted = true;
     let frameCurrentTime = 0;
     let frameDuration = 0;
     let controlsTimer = null;
@@ -830,6 +833,26 @@
       playQuality(next);
     }
 
+    function updateAdMuteButton() {
+      const button = document.getElementById('ad-mute-toggle');
+      button.innerHTML = '<span class="sl-ic">' + SLIcon(adMuted ? 'mute' : 'volume') + '</span><span id="ad-mute-label">' + (adMuted ? 'Unmute' : 'Mute') + '</span>';
+      button.setAttribute('aria-label',adMuted ? 'Unmute sponsor video' : 'Mute sponsor video');
+      button.title = adMuted ? 'Unmute sponsor' : 'Mute sponsor';
+    }
+
+    function toggleAdMute(event) {
+      if (event) event.stopPropagation();
+      adMuted = !adMuted;
+      const host = document.getElementById('ad-commercial-media');
+      host.querySelectorAll('video').forEach(video => { video.volume = 1; video.muted = adMuted; });
+      host.querySelectorAll('iframe').forEach(frame => {
+        if (!frame.contentWindow) return;
+        if (frame.dataset.platform === 'youtube') frame.contentWindow.postMessage(JSON.stringify({event:'command',func:adMuted ? 'mute' : 'unMute',args:[]}),'*');
+        if (frame.dataset.platform === 'vimeo') frame.contentWindow.postMessage({method:'setVolume',value:adMuted ? 0 : 1},'*');
+      });
+      updateAdMuteButton();
+    }
+
     function openSponsorDestination() {
       const targetUrl = slSafeAdLink(videoData?.rewardAdLink || 'https://google.com');
       window.open(targetUrl,'_blank','noopener,noreferrer');
@@ -838,6 +861,7 @@
     async function startFullscreenAd(purpose = 'unlock') {
       if ((unlocked && purpose === 'unlock') || document.getElementById('fullscreen-ad').classList.contains('open')) return;
       adPurpose = purpose;
+      adMuted = true; updateAdMuteButton();
       pauseMainForAd();
       if (screen.orientation && screen.orientation.unlock) { try { screen.orientation.unlock(); } catch (e) {} }
       const overlay = document.getElementById('fullscreen-ad');
