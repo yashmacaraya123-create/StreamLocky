@@ -1,25 +1,11 @@
-STREAMLOCK V11 — SYNC REPAIR, REAL STORAGE & SPONSOR SOUND
+STREAMLOCK V12 — ADSENSE VERIFICATION
 
-SUPABASE
-- Updated is_admin() so the authorized Maker username/email is recognized
-  consistently by shared-content, media metadata, and Storage RLS policies.
-- Cloud/upload errors now show the actual backend message.
-- Added Manage Videos → Test Sync for an on-demand synchronization check.
-- Storage usage now recursively counts actual streamlock-media bucket objects
-  instead of relying only on media metadata rows.
-- Featured Next choices repopulate on startup and when editing; the current
-  video is excluded and saved choices remain available.
+- Added the supplied Google AdSense script inside the <head> of every HTML page.
+- Publisher client: ca-pub-8571248502433126.
+- All v11 Supabase sync repairs, actual bucket storage accounting, sponsor
+  mute controls, Featured Next editing, custom player, and layouts remain.
 
-SPONSOR PLAYBACK
-- Added a dedicated Mute/Unmute button to the fullscreen sponsor top bar.
-- Direct videos plus YouTube/Vimeo API playback support sound toggling.
-- Sponsor pause/seek/speed locks and click-to-visit reward rules remain intact.
-
-INTERFACE
-- Removed the bright tap/focus treatment from the video click shield.
-- Suppressed injected Powered by Netlify badges, including inside the embedded
-  video-list manager, so they no longer cover controls.
-
-REQUIRED FOR THE LIVE SYNC REPAIR
-Run the updated SUPABASE-SETUP.sql again, deploy all v11 files, and then sign
-out/in. See SYNC-FIX.md for the exact checklist.
+Deploy all v12 files to the GitHub repository root and wait for Netlify to
+publish. Then return to AdSense and request verification/review if required.
+Ad units or Auto Ads must still be enabled in your AdSense account for ads to
+appear. External scripts may not load in the local in-app file preview.
