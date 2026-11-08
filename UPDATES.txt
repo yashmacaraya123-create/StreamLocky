@@ -1,22 +1,32 @@
-STREAMLOCK V9 — SUPABASE SHARED DATA
+STREAMLOCK V10 — COMPACT DEVELOPER UI, PLAYER & STORAGE VISIBILITY
 
-- Connected the existing StreamLock interface to the supplied Supabase project.
-- Added real Supabase email authentication and removed hardcoded password login.
-- Added synchronized videos, lists, advertisements, settings, media, favorites,
-  views, impressions, unlocks, and reward counters.
-- Uploads use Supabase Storage with browser IndexedDB retained as a local cache.
-- Existing page designs, custom player, genuine quality renditions, rewarded
-  ads, responsive layout, and provider balance workflows remain intact.
-- Added admin-only content/media writes, public content reads, and owner-only
-  favorite policies. Admin username: yashmacaraya123-create.
-- Passwords, sessions, local users, and transactions are never uploaded in the
-  shared site-state payload.
-- Vendored the Supabase browser client and included its license.
+PLAYER
+- Reduced controls to small corner docks and a slim bottom-edge timeline.
+- Clicking the video immediately hides or shows the controls.
+- Automatic inactivity hiding, playback, volume, speed, quality, seeking,
+  fullscreen, and external-source API behavior remain intact.
+- Featured Next Video and its scroll prompt remain.
+- Removed only the More Videos to Watch section.
 
-REQUIRED ONE-TIME SETUP
-Run SUPABASE-SETUP.sql in your Supabase SQL Editor, then follow
-SUPABASE-SETUP.md. The SQL has not been run for you and live synchronization
-cannot work until that setup is completed.
+UPLOAD AND SYNC STATUS
+- Added visible preparing, uploading, syncing, success, and failure indicators
+  for video files, thumbnails, commercials, links, lists, and settings.
+- Added straightforward file/link validation before publishing.
 
-Deploy the complete folder contents to the GitHub repository root. Netlify will
-then deploy automatically if the existing Git connection is enabled.
+DEVELOPER HUB
+- Manage Video Lists now opens inside the Developer Hub as an integrated pane.
+- Other tab activation remains independent and unchanged.
+- Replaced the long video table with compact individually expandable cards.
+- Removed all Expand all and Collapse all controls.
+- Added a Supabase media storage meter with actual tracked bytes, file count,
+  estimated remaining plan space, refresh, and a direct Storage dashboard link.
+- The default plan allowance is 1 GiB and can be changed in supabase-config.js.
+  Usage is calculated from media_files metadata, not simulated.
+
+VIDEO LISTS
+- Browse, favorites, collection videos, and Existing Collections now use small
+  vertical cards in responsive grids instead of long horizontal rows.
+
+CLOUD
+- Supabase authentication, shared content, media, favorites, stats, security
+  policies, and setup documentation from v9 remain included.

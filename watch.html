@@ -352,6 +352,24 @@
     .fullscreen-ad-overlay{height:100dvh;padding:clamp(12px,2.5vw,24px);background:radial-gradient(circle at 50% 35%,#101b30,#030611 70%);transform:none!important}.fullscreen-ad-overlay:fullscreen{width:100vw;height:100dvh;transform:none!important}.ad-center-stage{min-height:0}.ad-headline{font-size:clamp(.95rem,2.2vw,1.25rem);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.ad-desc-text{font-size:clamp(.72rem,1.5vw,.84rem)}.btn-check-offer{max-width:650px;font-size:clamp(.82rem,2vw,1rem);padding:13px 20px;border-radius:14px}.ad-sponsor-label{font-size:.68rem}.ad-corner-timer{font-size:.95rem;padding:7px 14px}
     .next-video-hint{position:absolute;z-index:13;left:50%;bottom:5px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;gap:6px;width:max-content;max-width:calc(100% - 24px);padding:6px 12px;border:1px solid rgba(0,242,254,.38);border-radius:999px;background:rgba(5,15,28,.94);color:#c8fcff;box-shadow:0 5px 18px rgba(0,0,0,.35);backdrop-filter:blur(8px);font-size:.66rem;cursor:pointer;animation:nextHintIn .25s ease}.next-video-hint:hover{background:#00f2fe;color:#051322}.next-video-hint .sl-ic{width:13px;height:13px;margin:0;animation:slNudge 1.9s ease-in-out infinite}.player-container:fullscreen .next-video-hint,.player-container:-webkit-full-screen .next-video-hint{display:none!important}@keyframes nextHintIn{from{opacity:0;bottom:0}to{opacity:1;bottom:5px}}
     @media(max-width:560px){.player-tools{padding:7px 7px 30px}.player-brand-chip{font-size:0;padding:6px;border:0}.player-brand-chip .sl-ic{width:16px;height:16px}.quality-picker>span{display:none}.quality-picker select{max-width:105px}.player-control-bar{padding:28px 7px 7px}.has-next-hint .player-control-bar{padding-bottom:40px}.player-buttons-row{padding:3px 4px;gap:4px}.player-volume{width:54px}.player-rate{font-size:.58rem}.player-container.is-portrait{height:68vh}.next-video-hint{bottom:4px;padding:5px 9px;font-size:.59rem}.ad-commercial-media{height:min(52vh,480px)}.btn-check-offer{font-size:.78rem;padding:12px 14px}}
+
+
+    /* V10: minimal corner docks leave the picture unobstructed. */
+    .player-source-shade.top{height:32px}.player-source-shade.bottom{height:24px}
+    .player-tools{padding:7px;background:none;align-items:flex-start}
+    .player-brand-chip{font-size:0;padding:6px;border-radius:8px;background:rgba(5,13,25,.74)}
+    .player-brand-chip .sl-ic{width:16px;height:16px}
+    .player-control-bar{padding:0;background:none}
+    .player-timeline-row{position:absolute;left:7px;right:7px;bottom:1px;gap:6px;margin:0}
+    .player-timeline-row .player-time{font-size:.52rem;min-width:26px;text-shadow:0 1px 3px #000}
+    .player-timeline{height:3px}
+    .player-buttons-row{position:absolute;left:8px;right:8px;bottom:12px;min-height:0;padding:0;border:0;background:none;backdrop-filter:none}
+    .player-button-group{gap:3px;padding:3px 5px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(5,13,25,.8);backdrop-filter:blur(9px)}
+    .player-source-state{display:none!important}
+    .player-volume{width:52px}
+    .is-unlocked:not(.controls-visible) .player-center-play{opacity:0;visibility:hidden;pointer-events:none}
+    @media(max-width:560px){.player-tools{padding:5px}.player-control-bar{padding:0}.player-buttons-row{left:5px;right:5px;bottom:11px;padding:0}.player-button-group{padding:2px 3px}.player-volume{width:42px}.player-timeline-row{left:5px;right:5px}.player-rate{max-width:52px}.player-button-group .player-time{display:none}}
+    .has-next-hint .player-control-bar{padding:0}.has-next-hint .player-buttons-row{bottom:42px}.has-next-hint .player-timeline-row{bottom:33px}
   </style>
 </head>
 <body>
@@ -376,7 +394,7 @@
         <video id="player-video" playsinline preload="auto"></video>
         <iframe id="player-iframe" allow="autoplay; encrypted-media; picture-in-picture"></iframe>
         <div class="player-source-shade top"></div><div class="player-source-shade bottom"></div>
-        <button type="button" class="player-click-shield" id="player-click-shield" onclick="wakePlayerControls()" aria-label="Show video controls"></button>
+        <button type="button" class="player-click-shield" id="player-click-shield" onclick="togglePlayerControls()" aria-label="Show or hide video controls"></button>
         <button type="button" class="player-center-play" id="player-center-play" onclick="toggleMainPlayback()" aria-label="Play video"><span class="sl-ic" data-icon="play"></span></button>
         <div class="player-tools" id="player-tools" style="display:none;">
           <div class="player-brand-chip"><span class="sl-ic" data-icon="film"></span> StreamLock Player</div>
@@ -446,11 +464,6 @@
         </a>
       </div>
 
-      <!-- Next Videos Chained List -->
-      <div class="next-videos-section">
-        <h3 style="font-size:1rem; font-weight:700; color:#38bdf8;">More Videos to Watch</h3>
-        <div class="next-grid" id="next-videos-grid"></div>
-      </div>
     </div>
 
   </main>
@@ -569,30 +582,6 @@
         }
       }
 
-      // Next Videos List
-      let nextVideos = [];
-      if (videoData.selectedNextIds && videoData.selectedNextIds.length > 0) {
-        nextVideos = appData.links.filter(l => videoData.selectedNextIds.includes(l.id) && l.id !== videoData.id);
-      }
-      if (nextVideos.length === 0) {
-        nextVideos = appData.links.filter(l => l.id !== videoData.id);
-      }
-
-      const nextGrid = document.getElementById('next-videos-grid');
-      if (nextVideos.length > 0) {
-        nextGrid.innerHTML = nextVideos.map(v => `
-          <a href="watch.html?id=${v.id}" class="next-card">
-            <img src="${v.thumbnail}" class="next-thumb" alt="">
-            <div style="overflow:hidden;">
-              <div class="next-name">${escapeHtml(v.title)}</div>
-              <div style="font-size:0.75rem; color:#00f2fe;"><span class="sl-ic" data-icon="play"></span> Watch Next</div>
-            </div>
-          </a>
-        `).join('');
-      } else {
-        nextGrid.innerHTML = '<div style="color:#64748b; font-size:0.85rem;">No further videos available.</div>';
-      }
-
       // Record banner impression
       appData.stats.bannerImpressions = (appData.stats.bannerImpressions || 0) + 1;
       appData.stats.estimatedEarningsUSD = parseFloat(((appData.stats.estimatedEarningsUSD || 0) + (appData.settings.cpmBanner / 1000)).toFixed(4));
@@ -603,6 +592,8 @@
 
     function showNextVideoHint() {
       const hint = document.getElementById('next-video-hint');
+      const featured = document.getElementById('featured-box');
+      if (!featured || featured.style.display === 'none') return;
       document.getElementById('player-box').classList.add('has-next-hint');
       hint.style.display = 'flex';
       slHydrate(hint);
@@ -610,7 +601,7 @@
 
     function scrollToNextVideo() {
       const featured = document.getElementById('featured-box');
-      const target = featured && featured.style.display !== 'none' ? featured : document.querySelector('.next-videos-section');
+      const target = featured && featured.style.display !== 'none' ? featured : null;
       document.getElementById('next-video-hint').style.display = 'none';
       document.getElementById('player-box').classList.remove('has-next-hint');
       if (target) target.scrollIntoView({behavior:'smooth',block:'center'});
@@ -652,6 +643,14 @@
       if (isMainPlaying()) controlsTimer = setTimeout(() => {
         if (isMainPlaying()) box.classList.remove('controls-visible');
       },2800);
+    }
+
+    function togglePlayerControls() {
+      const box = document.getElementById('player-box');
+      if (box.classList.contains('controls-visible')) {
+        box.classList.remove('controls-visible');
+        if (controlsTimer) clearTimeout(controlsTimer);
+      } else wakePlayerControls();
     }
 
     function updatePlayerChrome() {
@@ -971,9 +970,9 @@
     });
     document.getElementById('player-rate').addEventListener('change',event => changePlaybackRate(event.target.value));
     const playerBox = document.getElementById('player-box');
-    playerBox.addEventListener('pointermove',wakePlayerControls);
-    playerBox.addEventListener('pointerdown',wakePlayerControls);
-    playerBox.addEventListener('touchstart',wakePlayerControls,{passive:true});
+    playerBox.addEventListener('pointermove',event => { if (event.pointerType === 'mouse') wakePlayerControls(); });
+    document.getElementById('player-tools').addEventListener('pointerdown',wakePlayerControls);
+    document.getElementById('player-control-bar').addEventListener('pointerdown',wakePlayerControls);
     window.addEventListener('message',event => {
       let data = event.data;
       try { if (typeof data === 'string') data = JSON.parse(data); } catch (e) { return; }

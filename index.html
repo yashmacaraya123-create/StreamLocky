@@ -221,6 +221,23 @@
     .nav-tabs .tab-btn .sl-ic{width:16px;height:16px;margin:0;flex:none}
     @media(max-width:780px){.nav-tabs{order:3;flex-basis:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:4px}.nav-tabs .tab-btn{width:100%;padding:8px 9px}.nav-tabs .tab-btn:last-child{grid-column:1/-1}}
     @media(max-width:390px){.nav-tabs .tab-btn{font-size:.72rem;white-space:normal;line-height:1.25}}
+
+
+    /* V10: compact expandable management + integrated list manager */
+    .video-manage-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+    .video-manage-item{min-width:0;overflow:hidden;border:1px solid rgba(255,255,255,.09);border-radius:10px;background:#080d1a}
+    .video-manage-item[open]{border-color:rgba(0,242,254,.3)}
+    .video-manage-item summary{list-style:none;display:flex;align-items:center;gap:9px;padding:9px;cursor:pointer;user-select:none}
+    .video-manage-item summary::-webkit-details-marker{display:none}
+    .video-manage-thumb{width:58px;height:42px;flex:0 0 58px;object-fit:cover;border-radius:6px;background:#000}
+    .video-manage-copy{min-width:0;flex:1}.video-manage-copy strong{display:block;color:#edf5ff;font-size:.79rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.video-manage-copy small{display:block;color:#7188aa;font-size:.62rem;margin-top:3px}
+    .video-manage-chevron{color:#00f2fe;transition:transform .2s}.video-manage-item[open] .video-manage-chevron{transform:rotate(180deg)}
+    .video-manage-body{padding:11px;border-top:1px solid rgba(255,255,255,.07)}.video-manage-body p{color:#8fa6c5;font-size:.7rem;line-height:1.45;margin-bottom:10px}.video-manage-body label{display:block;color:#a9bdd7;font-size:.63rem;margin-bottom:4px}
+    .video-manage-link{display:flex;gap:5px}.video-manage-link input{min-width:0;flex:1;padding:6px 7px;border:1px solid rgba(255,255,255,.1);border-radius:5px;background:#050a13;color:#8fa6c5;font-size:.64rem}.video-manage-meta{display:flex;justify-content:space-between;gap:8px;margin:8px 0;color:#64748b;font-size:.61rem}.video-manage-meta a{color:#00f2fe;text-decoration:none}
+    .video-manage-actions{display:flex;gap:5px;flex-wrap:wrap}.video-manage-actions .btn{font-size:.65rem;padding:5px 8px}.video-manage-empty{grid-column:1/-1;text-align:center;color:#8298b9;padding:24px}
+    .storage-panel{padding:12px;margin-bottom:12px;border:1px solid rgba(0,242,254,.18);border-radius:10px;background:#080d1a}.storage-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.storage-panel-head strong{display:block;color:#eaf5ff;font-size:.82rem}.storage-panel-head span{display:block;color:#7188aa;font-size:.63rem;margin-top:3px}.storage-track{height:6px;margin:10px 0 7px;border-radius:6px;background:#152239;overflow:hidden}.storage-track>div{height:100%;width:0;background:linear-gradient(90deg,#00f2fe,#007dfe);transition:width .35s}.storage-values{display:flex;gap:18px;flex-wrap:wrap;color:#7188aa;font-size:.63rem}.storage-values b{color:#00f2fe}.storage-links{display:flex;justify-content:space-between;gap:12px;margin-top:8px;color:#526b8e;font-size:.57rem}.storage-links a{flex:none;color:#00f2fe;text-decoration:none}
+    .embedded-manager-card{padding:0;overflow:hidden}.embedded-list-manager{display:block;width:100%;height:calc(100vh - 150px);min-height:680px;border:0;background:transparent}
+    @media(max-width:760px){.video-manage-list{grid-template-columns:1fr}.storage-links{flex-direction:column;gap:4px}.embedded-list-manager{min-height:720px}.video-manage-copy strong{font-size:.76rem}}
   </style>
 </head>
 <body>
@@ -233,7 +250,7 @@
 
     <nav class="nav-tabs">
       <button class="tab-btn active" data-pane="videos" onclick="showPane('videos')">📋 Manage Videos</button>
-      <a class="tab-btn manage-lists-tab" href="groups.html"><span class="sl-ic" data-icon="list"></span><span>Manage Video Lists</span></a>
+      <button class="tab-btn manage-lists-tab" data-pane="lists" onclick="showPane('lists')"><span class="sl-ic" data-icon="list"></span><span>Manage Video Lists</span></button>
       <button class="tab-btn" data-pane="upload" onclick="showPane('upload')">➕ Upload Video</button>
       <button class="tab-btn" data-pane="ads-manager" onclick="showPane('ads-manager')">🖼️ Ads Management</button>
       <button class="tab-btn" data-pane="stats" onclick="showPane('stats')">💰 Balance</button>
@@ -249,30 +266,29 @@
         <div class="card-head">
           <div>
             <h2 class="card-title">All Monetized Videos</h2>
-            <p class="card-sub">Instant zero-cloud playback, 1-click copy link, edit sponsor ads & recommendations.</p>
+            <p class="card-sub">Compact expandable video cards, cloud media usage, sharing, editing, and sponsor settings.</p>
           </div>
           <button class="btn btn-primary" onclick="showPane('upload')">+ Add New Video</button>
         </div>
 
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Video</th>
-                <th>Shareable Watch Link</th>
-                <th>Sponsor Ad</th>
-                <th>Source</th>
-                <th>Views</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="videos-tbody"></tbody>
-          </table>
+        <div class="storage-panel" id="storage-panel">
+          <div class="storage-panel-head"><div><strong>Supabase Video Storage</strong><span id="storage-status">Reading live media metadata…</span></div><button type="button" class="btn btn-outline" onclick="loadStorageUsage()">Refresh</button></div>
+          <div class="storage-track"><div id="storage-used-bar"></div></div>
+          <div class="storage-values"><span><b id="storage-used">—</b> used</span><span><b id="storage-available">—</b> available</span><span><b id="storage-files">—</b> files</span></div>
+          <div class="storage-links"><a href="https://supabase.com/dashboard/project/ttugwcsgurukaecjcmgo/storage/buckets/streamlock-media" target="_blank" rel="noopener">Open Supabase Storage ↗</a><span>Remaining space uses your configured plan allowance and tracked StreamLock files.</span></div>
         </div>
+        <div id="videos-tbody" class="video-manage-list"></div>
       </div>
     </section>
 
-    <!-- TAB 2: UPLOAD & ADD VIDEO -->
+    <!-- TAB 2: MANAGE VIDEO LISTS WITHOUT LEAVING THE DEVELOPER HUB -->
+    <section id="pane-lists" class="pane">
+      <div class="card embedded-manager-card">
+        <iframe class="embedded-list-manager" data-src="groups.html?embed=1" title="Manage Video Lists" loading="lazy"></iframe>
+      </div>
+    </section>
+
+    <!-- TAB 3: UPLOAD & ADD VIDEO -->
     <section id="pane-upload" class="pane">
       <div class="card" style="max-width: 640px; margin: 0 auto;">
         <h2 class="card-title" id="form-heading">Monetize New Video</h2>
@@ -438,7 +454,6 @@
             <button type="button" class="ad-manager-tab active" id="ad-tab-banners" onclick="showAdManagerSection('banners')">Banner Ads <span id="banner-ad-count">0</span></button>
             <button type="button" class="ad-manager-tab" id="ad-tab-rewarded" onclick="showAdManagerSection('rewarded')">Rewarded Ads <span id="rewarded-ad-count">0</span></button>
           </div>
-          <div class="ad-expand-actions"><button type="button" onclick="toggleAllAdEditors(true)">Expand all</button><button type="button" onclick="toggleAllAdEditors(false)">Collapse all</button></div>
         </div>
 
         <div id="banner-ads-section">
@@ -524,6 +539,11 @@
 
       const activeTab = document.querySelector('.tab-btn[data-pane="' + paneId + '"]');
       if (activeTab) activeTab.classList.add('active');
+      if (paneId === 'lists') {
+        const frame = document.querySelector('.embedded-list-manager');
+        if (frame && !frame.src) frame.src = frame.dataset.src;
+      }
+      if (paneId === 'videos') loadStorageUsage();
     }
 
     function setSourceMode(mode) {
@@ -544,7 +564,7 @@
       renderBalanceSources();
       refreshBalanceSources();
       renderVideos();
-      populateNextChoices();
+      loadStorageUsage();
       populateBannersForm();
     }
 
@@ -667,54 +687,58 @@
       saveLocalData(appData); renderBalanceSources(); showToast('Balance source removed');
     }
 
+    function formatStorageBytes(bytes) {
+      if (!Number.isFinite(bytes)) return '—';
+      const units = ['B','KB','MB','GB','TB']; let value = Math.max(0,bytes); let unit = 0;
+      while (value >= 1024 && unit < units.length - 1) { value /= 1024; unit++; }
+      return (value >= 10 || unit === 0 ? value.toFixed(0) : value.toFixed(2)) + ' ' + units[unit];
+    }
+
+    async function loadStorageUsage() {
+      const status = document.getElementById('storage-status');
+      if (!status) return;
+      status.textContent = 'Reading live media metadata…';
+      if (!window.slSupabase) { status.textContent = 'Supabase is not connected.'; return; }
+      try {
+        const { data,error } = await window.slSupabase.from('media_files').select('size_bytes');
+        if (error) throw error;
+        const used = (data || []).reduce((sum,file) => sum + (Number(file.size_bytes) || 0),0);
+        const quota = Number(window.SL_SUPABASE_CONFIG.storageQuotaBytes) || 1073741824;
+        const available = Math.max(0,quota - used);
+        document.getElementById('storage-used').textContent = formatStorageBytes(used);
+        document.getElementById('storage-available').textContent = formatStorageBytes(available);
+        document.getElementById('storage-files').textContent = String((data || []).length);
+        document.getElementById('storage-used-bar').style.width = Math.min(100,(used / quota) * 100) + '%';
+        status.textContent = 'Live tracked usage · ' + formatStorageBytes(quota) + ' configured plan allowance';
+      } catch (error) {
+        status.textContent = 'Storage usage unavailable: ' + error.message;
+        document.getElementById('storage-used').textContent = '—';
+        document.getElementById('storage-available').textContent = '—';
+        document.getElementById('storage-files').textContent = '—';
+      }
+    }
+
     function renderVideos() {
-      const tbody = document.getElementById('videos-tbody');
+      const container = document.getElementById('videos-tbody');
       const videos = appData.links || [];
-      if (videos.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#94a3b8; padding:1.5rem;">No videos uploaded yet.</td></tr>';
+      if (!videos.length) {
+        container.innerHTML = '<div class="video-manage-empty">No videos uploaded yet.</div>';
         return;
       }
-
-      tbody.innerHTML = videos.map(v => {
+      container.innerHTML = videos.map(v => {
         const fullUrl = getWatchUrl(v.id);
-        const sourceLabel = v.videoSourceType === 'file' ? '📁 Local Binary' : '🔗 Web Link';
-        return `
-          <tr>
-            <td>
-              <div style="display:flex; align-items:center; gap:8px;">
-                <img src="${v.thumbnail}" style="width:44px; height:30px; border-radius:4px; object-fit:cover; background:#000;" alt="">
-                <div>
-                  <div style="font-weight:700;">${escapeHtml(v.title)}</div>
-                  <div style="font-size:0.72rem; color:#64748b;">ID: ${v.id}</div>
-                </div>
-              </div>
-            </td>
-            <td>
-              <div style="display:flex; align-items:center; gap:4px;">
-                <div class="link-copy-box">${fullUrl}</div>
-                <button class="btn btn-copy" onclick="copyUrl('${fullUrl}')">Copy</button>
-              </div>
-            </td>
-            <td>
-              <div style="font-size:0.75rem; font-weight:600;">${v.rewardAdDuration || 10}s Ad</div>
-              <a href="${v.rewardAdLink || '#'}" target="_blank" style="color:#00f2fe; font-size:0.72rem; text-decoration:none;">Target ↗</a>
-            </td>
-            <td>
-              <span style="background:#141c2e; color:#38bdf8; padding:2px 6px; border-radius:6px; font-size:0.72rem;">
-                ${sourceLabel}
-              </span>
-            </td>
-            <td><strong style="color:#10b981;">${v.views || 0}</strong></td>
-            <td>
-              <div style="display:flex; gap:4px;">
-                <a href="${fullUrl}" target="_blank" class="btn btn-outline" style="padding:3px 6px; font-size:0.72rem;">Watch ↗</a>
-                <button class="btn btn-edit" onclick="startEditVideo('${v.id}')">Edit</button>
-                <button class="btn btn-danger" onclick="deleteVideo('${v.id}')">Del</button>
-              </div>
-            </td>
-          </tr>
-        `;
+        const sourceLabel = v.videoSourceType === 'file' ? 'Uploaded file' : 'Web link';
+        return '<details class="video-manage-item"><summary>' +
+          '<img class="video-manage-thumb" src="' + escapeHtml(v.thumbnail || '') + '" alt="">' +
+          '<span class="video-manage-copy"><strong>' + escapeHtml(v.title) + '</strong><small>' + sourceLabel + ' · ' + (v.views || 0) + ' views · ' + (v.rewardAdDuration || 10) + 's ad</small></span>' +
+          '<span class="video-manage-chevron">▾</span></summary>' +
+          '<div class="video-manage-body"><p>' + escapeHtml(v.description || 'No video description.') + '</p>' +
+          '<label>Shareable watch link</label><div class="video-manage-link"><input type="text" readonly value="' + escapeHtml(fullUrl) + '" onclick="this.select()"><button type="button" class="btn btn-copy" onclick="copyUrl(\'' + fullUrl + '\')">Copy</button></div>' +
+          '<div class="video-manage-meta"><span>ID: ' + escapeHtml(v.id) + '</span><a href="' + escapeHtml(v.rewardAdLink || '#') + '" target="_blank" rel="noopener sponsored">Sponsor target ↗</a></div>' +
+          '<div class="video-manage-actions"><a href="' + fullUrl + '" target="_blank" class="btn btn-outline">Watch ↗</a><button type="button" class="btn btn-edit" onclick="startEditVideo(\'' + v.id + '\')">Edit Video</button><button type="button" class="btn btn-danger" onclick="deleteVideo(\'' + v.id + '\')">Delete</button></div>' +
+          '</div></details>';
       }).join('');
+      hydrateIndexedImages(container);
     }
 
     function setThumbSourceMode(mode) {
@@ -833,10 +857,7 @@
       document.getElementById('ad-tab-rewarded').classList.toggle('active',!banners);
     }
 
-    function toggleAllAdEditors(open) {
-      const visible = document.getElementById('banner-ads-section').style.display !== 'none' ? document.getElementById('banner-ads-section') : document.getElementById('rewarded-ads-section');
-      visible.querySelectorAll('details.ad-editor').forEach(editor => editor.open = open);
-    }
+
 
     function populateBannersForm() {
       const banners = appData.settings.ads || [];
@@ -893,6 +914,7 @@
     }
 
     async function saveBannersConfig() {
+      slTransferStatus('saving','Saving advertisement settings…',20);
       const btn = document.getElementById('btn-save-ads');
       btn.disabled = true;
       btn.innerText = 'Saving Ads...';
@@ -1014,6 +1036,14 @@
       const fileInput = document.getElementById('inp-file');
       const hasFile = fileInput.files && fileInput.files[0];
       const btn = document.getElementById('btn-submit');
+      const priorVideo = editId ? appData.links.find(l => l.id === editId) : null;
+      slTransferStatus('saving',editId ? 'Validating and updating video…' : 'Validating and publishing video…',20);
+      if (currentSourceMode === 'file' && !hasFile && !(priorVideo && priorVideo.videoSourceType === 'file')) {
+        slTransferStatus('error','Choose a video file before publishing.',100); slAlert('Choose a video file first.'); return;
+      }
+      if (currentSourceMode === 'url' && !document.getElementById('inp-url').value.trim() && !priorVideo) {
+        slTransferStatus('error','Enter a valid video link before publishing.',100); slAlert('Enter a video link first.'); return;
+      }
       btn.disabled = true;
 
       let newId = editId || ('v-' + Math.random().toString(36).substring(2, 9));

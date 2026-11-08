@@ -18,6 +18,7 @@ function openVideoDB() {
 }
 
 async function saveVideoFileToDB(id, file) {
+  slTransferStatus('uploading','Preparing ' + (file.name || 'media') + '…',12);
   const db = await openVideoDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_VIDEOS, 'readwrite');
@@ -31,7 +32,7 @@ async function saveVideoFileToDB(id, file) {
       updatedAt: Date.now()
     });
     tx.oncomplete = () => { slCloudUploadMedia(id,file).then(() => resolve(true)).catch(() => resolve(true)); };
-    tx.onerror = () => reject(tx.error);
+    tx.onerror = () => { slTransferStatus('error','Local media preparation failed.',100); reject(tx.error); };
   });
 }
 
@@ -270,6 +271,21 @@ function getLocalData() {
   }
 }
 
+let slTransferTimer = null;
+function slTransferStatus(state,message,percent) {
+  if (!document.body) return;
+  let host = document.getElementById('sl-transfer-status');
+  if (!host) {
+    host = document.createElement('div'); host.id = 'sl-transfer-status'; host.setAttribute('role','status');
+    document.body.appendChild(host);
+  }
+  host.hidden = false; host.className = 'sl-transfer-status ' + state;
+  host.innerHTML = '<span class="sl-ic">' + SLIcon(state === 'error' ? 'alert' : state === 'success' ? 'shield' : 'bolt') + '</span><div class="sl-transfer-copy"><div>' + slEscapeHTML(message) + '</div><div class="sl-transfer-track"><div class="sl-transfer-bar"></div></div></div>';
+  host.querySelector('.sl-transfer-bar').style.width = Math.max(0,Math.min(100,percent || 0)) + '%';
+  if (slTransferTimer) clearTimeout(slTransferTimer);
+  if (state === 'success' || state === 'error') slTransferTimer = setTimeout(() => { host.hidden = true; },state === 'success' ? 3500 : 8000);
+}
+
 const SL_CLOUD = { initialized:false, initPromise:null, saveTimer:null, syncing:false };
 
 function saveLocalData(data) {
@@ -291,8 +307,10 @@ async function slCloudPushState(data) {
       id:1,payload:slCloudContent(data),updated_at:new Date().toISOString()
     });
     if (error) throw error;
+    slTransferStatus('success','Published and synchronized with Supabase.',100);
     return true;
   } catch (e) {
+    slTransferStatus('error','Cloud save failed. Your local copy is retained.',100);
     console.error('StreamLock cloud save failed:',e.message || e);
     if (typeof showToast === 'function') showToast('Saved locally; cloud sync failed');
     return false;
@@ -301,6 +319,7 @@ async function slCloudPushState(data) {
 
 function slCloudQueueSave(data) {
   if (!window.slSupabase || !SL_CLOUD.initialized || !isDeveloperAccount()) return;
+  slTransferStatus('saving','Syncing changes to Supabase…',55);
   if (SL_CLOUD.saveTimer) clearTimeout(SL_CLOUD.saveTimer);
   SL_CLOUD.saveTimer = setTimeout(() => slCloudPushState(data),450);
 }
@@ -395,6 +414,7 @@ async function slCloudInitialize() {
 
 async function slCloudUploadMedia(id,file) {
   if (!window.slSupabase || !isDeveloperAccount()) return false;
+  slTransferStatus('uploading','Uploading ' + (file.name || 'media') + ' to Supabase…',48);
   try {
     const session = getCurrentSession();
     const extension = (file.name && file.name.includes('.') ? file.name.split('.').pop() : 'bin').toLowerCase().replace(/[^a-z0-9]/g,'');
@@ -410,8 +430,10 @@ async function slCloudUploadMedia(id,file) {
       uploaded_by:session.id,updated_at:new Date().toISOString()
     });
     if (metaError) throw metaError;
+    slTransferStatus('success',(file.name || 'Media') + ' uploaded successfully.',100);
     return true;
   } catch (e) {
+    slTransferStatus('error','Upload failed. The local copy is retained; please retry.',100);
     console.error('StreamLock media upload failed:',e.message || e);
     if (typeof showToast === 'function') showToast('Media saved locally; cloud upload failed');
     return false;
