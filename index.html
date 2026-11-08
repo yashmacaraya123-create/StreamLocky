@@ -506,10 +506,11 @@
 
   <div class="toast" id="toast">Copied to clipboard!</div>
 
+  <script src="supabase.js"></script>
+  <script src="supabase-config.js"></script>
   <script src="storage.js"></script>
   <script>
     // Enforce exclusive Developer access
-    enforceAdminAuth();
 
     let appData = null;
     let currentSourceMode = 'file';
@@ -1152,7 +1153,7 @@
       return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#39;");
     }
 
-    init();
+    slBoot(() => { if (enforceAdminAuth()) init(); });
   </script>
 </body>
 </html>

@@ -130,8 +130,8 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label">Email / Phone / Username</label>
-        <input type="text" id="inp-identifier" class="form-input" placeholder="Enter email or phone" required>
+        <label class="form-label">Email Address</label>
+        <input type="text" id="inp-identifier" class="form-input" placeholder="Enter your account email" required>
       </div>
 
       <div class="form-group">
@@ -154,6 +154,8 @@
   </section>
   </main>
 
+  <script src="supabase.js"></script>
+  <script src="supabase-config.js"></script>
   <script src="storage.js"></script>
   <script>
     let mode = 'login';
@@ -168,60 +170,38 @@
 
     async function handleAuthSubmit(e) {
       e.preventDefault();
-      const iden = document.getElementById('inp-identifier').value.trim();
-      const pass = document.getElementById('inp-password').value.trim();
-      const data = getLocalData();
-
-      // Check if Developer credentials are used
-      if (iden === 'yashmacaraya123@gmail.com' && pass === 'Yaseenphotos123') {
-        const makerUser = {
-          id: 'admin-master',
-          role: 'admin',
-          email: 'yashmacaraya123@gmail.com',
-          name: 'Yash Macaraya (Developer)'
-        };
-        setCurrentSession(makerUser);
-        await slAlert('Welcome Yash Macaraya! Developer privileges verified. Entering Admin Management...');
-        window.location.href = 'index.html';
-        return;
-      }
-
-      if (mode === 'login') {
-        const found = data.users.find(u => 
-          (u.email === iden || u.phone === iden || u.username === iden) && u.password === pass
-        );
-
-        if (!found) {
-          await slAlert('Invalid account details or password. Please try again.');
-          return;
-        }
-
-        setCurrentSession(found);
-        if (found.role === 'admin') {
-          window.location.href = 'index.html';
+      const email = document.getElementById('inp-identifier').value.trim();
+      const password = document.getElementById('inp-password').value;
+      const button = document.getElementById('btn-auth-submit');
+      if (!email.includes('@')) { await slAlert('Enter the email address used for your Supabase account.'); return; }
+      button.disabled = true;
+      try {
+        if (mode === 'login') {
+          const { error } = await window.slSupabase.auth.signInWithPassword({ email,password });
+          if (error) throw error;
         } else {
-          window.location.href = 'profile.html';
+          const name = document.getElementById('inp-name').value.trim() || 'Viewer';
+          const username = email.split('@')[0].replace(/[^a-zA-Z0-9_-]/g,'-');
+          const { data,error } = await window.slSupabase.auth.signUp({
+            email,password,options:{ data:{full_name:name,username},emailRedirectTo:location.origin + location.pathname }
+          });
+          if (error) throw error;
+          if (!data.session) {
+            await slAlert('Account created. Check your email to confirm it, then return here to sign in.','Confirm Your Email');
+            return;
+          }
         }
-      } else {
-        // Register regular viewer
-        const name = document.getElementById('inp-name').value.trim() || 'Viewer';
-        const newUser = {
-          id: 'u-' + Date.now().toString(36),
-          role: 'user',
-          username: iden,
-          email: iden.includes('@') ? iden : '',
-          phone: !iden.includes('@') ? iden : '',
-          password: pass,
-          name: name,
-          favorites: []
-        };
-        data.users.push(newUser);
-        saveLocalData(data);
-        setCurrentSession(newUser);
-        await slAlert('Welcome ' + name + '! Your account is now active.');
-        window.location.href = 'profile.html';
-      }
+        const { data } = await window.slSupabase.auth.getSession();
+        await slCloudSyncSession(data.session);
+        const session = getCurrentSession();
+        await slAlert(session && session.role === 'admin' ? 'Developer privileges verified. Entering Admin Management...' : 'Welcome! Your StreamLock account is now active.');
+        window.location.href = session && session.role === 'admin' ? 'index.html' : 'profile.html';
+      } catch (error) {
+        await slAlert(error.message || 'Authentication failed. Please try again.','Sign In Unsuccessful');
+      } finally { button.disabled = false; }
     }
+
+    slBoot(() => {});
   </script>
 </body>
 </html>

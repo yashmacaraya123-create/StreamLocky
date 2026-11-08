@@ -30,12 +30,12 @@ async function saveVideoFileToDB(id, file) {
       size: file.size,
       updatedAt: Date.now()
     });
-    tx.oncomplete = () => resolve(true);
+    tx.oncomplete = () => { slCloudUploadMedia(id,file).then(() => resolve(true)).catch(() => resolve(true)); };
     tx.onerror = () => reject(tx.error);
   });
 }
 
-async function loadVideoBlobURL(id) {
+async function loadLocalVideoBlobURL(id) {
   try {
     const db = await openVideoDB();
     return new Promise((resolve) => {
@@ -59,6 +59,20 @@ async function loadVideoBlobURL(id) {
   }
 }
 
+async function loadVideoBlobURL(id) {
+  const local = await loadLocalVideoBlobURL(id);
+  if (local) return local;
+  if (!window.slSupabase) return null;
+  try {
+    const { data,error } = await window.slSupabase.from('media_files').select('public_url').eq('id',id).maybeSingle();
+    if (error) throw error;
+    return data && data.public_url ? data.public_url : null;
+  } catch (e) {
+    console.warn('StreamLock cloud media lookup failed:',e.message || e);
+    return null;
+  }
+}
+
 // Master Database: Developer credentials configured
 const DEFAULT_APP_DATA = {
   users: [
@@ -68,7 +82,7 @@ const DEFAULT_APP_DATA = {
       username: "yashmacaraya",
       email: "yashmacaraya123@gmail.com",
       phone: "09171234567",
-      password: "Yaseenphotos123",
+      password: "",
       name: "Yash Macaraya (Developer)",
       favorites: []
     },
@@ -78,7 +92,7 @@ const DEFAULT_APP_DATA = {
       username: "viewer",
       email: "viewer@gmail.com",
       phone: "09180001111",
-      password: "123",
+      password: "",
       name: "Standard Viewer",
       favorites: ["group-1"]
     }
@@ -249,12 +263,6 @@ function getLocalData() {
   }
   try {
     const parsed = JSON.parse(stored);
-    // ensure admin has exact developer credentials
-    const adminIdx = parsed.users ? parsed.users.findIndex(u => u.role === 'admin') : -1;
-    if (adminIdx !== -1) {
-      parsed.users[adminIdx].email = "yashmacaraya123@gmail.com";
-      parsed.users[adminIdx].password = "Yaseenphotos123";
-    }
     return slDeepClean(normalizeAppData(parsed));
   } catch (e) {
     const fresh = JSON.parse(JSON.stringify(DEFAULT_APP_DATA));
@@ -262,9 +270,180 @@ function getLocalData() {
   }
 }
 
+const SL_CLOUD = { initialized:false, initPromise:null, saveTimer:null, syncing:false };
+
 function saveLocalData(data) {
   localStorage.setItem('streamlock_app_data', JSON.stringify(data));
+  slCloudQueueSave(data);
 }
+
+function slCloudContent(data) {
+  // Never upload local account records, passwords, sessions, or transactions.
+  return JSON.parse(JSON.stringify({
+    settings:data.settings || {}, groups:data.groups || [], links:data.links || [], stats:data.stats || {}
+  }));
+}
+
+async function slCloudPushState(data) {
+  if (!window.slSupabase || !isDeveloperAccount()) return false;
+  try {
+    const { error } = await window.slSupabase.from('site_state').upsert({
+      id:1,payload:slCloudContent(data),updated_at:new Date().toISOString()
+    });
+    if (error) throw error;
+    return true;
+  } catch (e) {
+    console.error('StreamLock cloud save failed:',e.message || e);
+    if (typeof showToast === 'function') showToast('Saved locally; cloud sync failed');
+    return false;
+  }
+}
+
+function slCloudQueueSave(data) {
+  if (!window.slSupabase || !SL_CLOUD.initialized || !isDeveloperAccount()) return;
+  if (SL_CLOUD.saveTimer) clearTimeout(SL_CLOUD.saveTimer);
+  SL_CLOUD.saveTimer = setTimeout(() => slCloudPushState(data),450);
+}
+
+async function slCloudSyncSession(authSession) {
+  SL_CLOUD.syncing = true;
+  try {
+    if (!authSession || !authSession.user) {
+      localStorage.removeItem('streamlock_session');
+      return;
+    }
+    const user = authSession.user;
+    const [{ data:profile,error:profileError },{ data:favorites,error:favoritesError }] = await Promise.all([
+      window.slSupabase.from('profiles').select('username,full_name,role').eq('id',user.id).maybeSingle(),
+      window.slSupabase.from('favorites').select('group_id').eq('user_id',user.id)
+    ]);
+    if (profileError) throw profileError;
+    if (favoritesError) throw favoritesError;
+    const session = {
+      id:user.id, email:user.email || '', role:profile && profile.role === 'admin' ? 'admin' : 'user',
+      username:(profile && profile.username) || (user.user_metadata && user.user_metadata.username) || '',
+      name:(profile && profile.full_name) || (user.user_metadata && user.user_metadata.full_name) || 'Viewer',
+      favorites:(favorites || []).map(item => item.group_id)
+    };
+    localStorage.setItem('streamlock_session',JSON.stringify(session));
+  } catch (e) {
+    console.warn('StreamLock profile sync failed:',e.message || e);
+  } finally { SL_CLOUD.syncing = false; }
+}
+
+async function slCloudPull() {
+  if (!window.slSupabase) return;
+  const [stateResult,statsResult,viewsResult] = await Promise.all([
+    window.slSupabase.from('site_state').select('payload,updated_at').eq('id',1).maybeSingle(),
+    window.slSupabase.from('site_stats').select('*').eq('id',1).maybeSingle(),
+    window.slSupabase.from('video_views').select('video_id,views')
+  ]);
+  if (stateResult.error) throw stateResult.error;
+  if (statsResult.error) throw statsResult.error;
+  if (viewsResult.error) throw viewsResult.error;
+  const local = getLocalData();
+  const cloud = stateResult.data && stateResult.data.payload;
+  if (cloud && Array.isArray(cloud.links)) {
+    local.settings = cloud.settings || local.settings;
+    local.groups = Array.isArray(cloud.groups) ? cloud.groups : [];
+    local.links = cloud.links;
+    local.stats = cloud.stats || local.stats;
+  }
+  if (statsResult.data) {
+    local.stats = {
+      ...local.stats,
+      totalUnlocks:Number(statsResult.data.total_unlocks) || 0,
+      bannerImpressions:Number(statsResult.data.banner_impressions) || 0,
+      rewardedAdCompletes:Number(statsResult.data.rewarded_ad_completes) || 0,
+      estimatedEarningsUSD:Number(statsResult.data.estimated_earnings_usd) || 0
+    };
+  }
+  const views = new Map((viewsResult.data || []).map(row => [row.video_id,Number(row.views) || 0]));
+  local.links.forEach(link => { if (views.has(link.id)) link.views = views.get(link.id); });
+  localStorage.setItem('streamlock_app_data',JSON.stringify(slDeepClean(normalizeAppData(local))));
+  if (!stateResult.data && isDeveloperAccount()) await slCloudPushState(local);
+}
+
+async function slCloudInitialize() {
+  if (SL_CLOUD.initPromise) return SL_CLOUD.initPromise;
+  SL_CLOUD.initPromise = (async () => {
+    if (!window.slSupabase) return;
+    try {
+      const { data,error } = await window.slSupabase.auth.getSession();
+      if (error) throw error;
+      await slCloudSyncSession(data.session);
+      await slCloudPull();
+    } catch (e) {
+      console.warn('StreamLock cloud initialization failed; using local cache:',e.message || e);
+    } finally { SL_CLOUD.initialized = true; }
+  })();
+  return SL_CLOUD.initPromise;
+}
+
+async function slCloudUploadMedia(id,file) {
+  if (!window.slSupabase || !isDeveloperAccount()) return false;
+  try {
+    const session = getCurrentSession();
+    const extension = (file.name && file.name.includes('.') ? file.name.split('.').pop() : 'bin').toLowerCase().replace(/[^a-z0-9]/g,'');
+    const safeId = String(id).replace(/[^a-zA-Z0-9_-]/g,'-');
+    const path = session.id + '/' + safeId + (extension ? '.' + extension : '');
+    const { error } = await window.slSupabase.storage.from('streamlock-media').upload(path,file,{
+      upsert:true,contentType:file.type || 'application/octet-stream',cacheControl:'3600'
+    });
+    if (error) throw error;
+    const { data:urlData } = window.slSupabase.storage.from('streamlock-media').getPublicUrl(path);
+    const { error:metaError } = await window.slSupabase.from('media_files').upsert({
+      id,path,public_url:urlData.publicUrl,mime_type:file.type || '',size_bytes:file.size || 0,
+      uploaded_by:session.id,updated_at:new Date().toISOString()
+    });
+    if (metaError) throw metaError;
+    return true;
+  } catch (e) {
+    console.error('StreamLock media upload failed:',e.message || e);
+    if (typeof showToast === 'function') showToast('Media saved locally; cloud upload failed');
+    return false;
+  }
+}
+
+async function slCloudSaveFavorites(previous,current) {
+  if (!window.slSupabase || SL_CLOUD.syncing || !current || !current.id) return;
+  const before = new Set(previous && previous.favorites || []);
+  const after = new Set(current.favorites || []);
+  const added = [...after].filter(id => !before.has(id));
+  const removed = [...before].filter(id => !after.has(id));
+  try {
+    if (removed.length) {
+      const { error } = await window.slSupabase.from('favorites').delete().eq('user_id',current.id).in('group_id',removed);
+      if (error) throw error;
+    }
+    if (added.length) {
+      const { error } = await window.slSupabase.from('favorites').insert(added.map(group_id => ({user_id:current.id,group_id})));
+      if (error) throw error;
+    }
+  } catch (e) { console.error('Favorite cloud sync failed:',e.message || e); }
+}
+
+async function slCloudRecordActivity(activity) {
+  if (!window.slSupabase) return;
+  try {
+    const { error } = await window.slSupabase.rpc('sl_record_activity',{
+      p_video_id:activity.videoId || null,p_unlocks:activity.unlocks || 0,
+      p_rewards:activity.rewards || 0,p_banner:activity.banner || 0,p_earnings:activity.earnings || 0
+    });
+    if (error) throw error;
+  } catch (e) { console.warn('Shared activity sync failed:',e.message || e); }
+}
+
+async function slBoot(callback) {
+  await slCloudInitialize();
+  const nav = document.getElementById('sl-nav-root');
+  if (nav) { nav.remove(); injectGlobalNav(); }
+  if (typeof callback === 'function') await callback();
+  mountPageAdBanners();
+  hydrateIndexedImages(document.body);
+  slHydrate(document.body);
+}
+
 
 function getCurrentSession() {
   const s = localStorage.getItem('streamlock_session');
@@ -273,16 +452,19 @@ function getCurrentSession() {
 }
 
 function setCurrentSession(user) {
+  const previous = getCurrentSession();
   localStorage.setItem('streamlock_session', JSON.stringify(user));
+  slCloudSaveFavorites(previous,user);
 }
 
 function clearSession() {
   localStorage.removeItem('streamlock_session');
+  if (window.slSupabase) window.slSupabase.auth.signOut({scope:'local'}).catch(() => {});
 }
 
 function isDeveloperAccount() {
   const session = getCurrentSession();
-  return session && session.role === 'admin' && session.email === 'yashmacaraya123@gmail.com';
+  return !!(session && session.role === 'admin' && session.id);
 }
 
 function enforceAdminAuth() {

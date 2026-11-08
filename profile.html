@@ -38,6 +38,8 @@
     <div class="sl-list-grid" id="favorites-container"></div>
   </main>
 
+  <script src="supabase.js"></script>
+  <script src="supabase-config.js"></script>
   <script src="storage.js"></script>
   <script>
     let appData = null;
@@ -93,7 +95,7 @@
       return String(value || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
     }
 
-    init();
+    slBoot(init);
   </script>
 </body>
 </html>

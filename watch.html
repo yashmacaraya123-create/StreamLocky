@@ -486,6 +486,8 @@
     </div>
   </div>
 
+  <script src="supabase.js"></script>
+  <script src="supabase-config.js"></script>
   <script src="storage.js"></script>
   <script>
     const urlParams = new URLSearchParams(window.location.search);
@@ -595,6 +597,7 @@
       appData.stats.bannerImpressions = (appData.stats.bannerImpressions || 0) + 1;
       appData.stats.estimatedEarningsUSD = parseFloat(((appData.stats.estimatedEarningsUSD || 0) + (appData.settings.cpmBanner / 1000)).toFixed(4));
       saveLocalData(appData);
+      slCloudRecordActivity({videoId:videoData.id,banner:1,earnings:(appData.settings.cpmBanner / 1000)});
     }
 
 
@@ -912,6 +915,10 @@
       appData.stats.rewardedAdCompletes = (appData.stats.rewardedAdCompletes || 0) + 1;
       appData.stats.estimatedEarningsUSD = parseFloat(((appData.stats.estimatedEarningsUSD || 0) + ((appData.settings.cpmRewarded / 1000) * multiplier)).toFixed(4));
       saveLocalData(appData);
+      slCloudRecordActivity({
+        videoId:videoData.id,unlocks:completedPurpose === 'unlock' ? 1 : 0,rewards:1,
+        earnings:(appData.settings.cpmRewarded / 1000) * multiplier
+      });
     }
 
     function updatePlayerRatio() {
@@ -1011,7 +1018,7 @@
       return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
-    init();
+    slBoot(init);
   </script>
 </body>
 </html>

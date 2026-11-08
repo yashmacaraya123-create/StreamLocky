@@ -209,9 +209,10 @@
 
   </main>
 
+  <script src="supabase.js"></script>
+  <script src="supabase-config.js"></script>
   <script src="storage.js"></script>
   <script>
-    enforceAdminAuth();
 
     let appData = null;
 
@@ -380,7 +381,7 @@
       return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
-    init();
+    slBoot(() => { if (enforceAdminAuth()) init(); });
   </script>
 </body>
 </html>
